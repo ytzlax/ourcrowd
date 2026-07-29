@@ -5,15 +5,25 @@ import path from "node:path";
 
 import { openDatabase, resolveProjectDataDir } from "./connection.js";
 import {
+  countSentiments,
+  emptySentimentCounts,
+  toSentimentBreakdown,
+} from "./sentiment_stats.js";
+import {
+  AlertJobStatus,
   MentionStatus,
   type Company,
   type CompanyInput,
   type CompanyMentionStatusResult,
+  type CompanyWithStats,
+  type DashboardSummary,
   type IsoDateTimeString,
+  type ListCompaniesQuery,
   type Mention,
   type MentionInput,
   type QuarterlyMentionsQuery,
   type SaveMentionsResult,
+  type SentimentCounts,
   type SentimentType,
 } from "./types.js";
 
@@ -407,6 +417,145 @@ export class DatabaseService {
     writeFileSync(mentionsPath, JSON.stringify(mentions, null, 2), "utf8");
 
     return { companiesPath, mentionsPath };
+  }
+
+  public getCompanyById(companyId: string): Company | null {
+    const row = this.db
+      .prepare(
+        `
+          SELECT
+            id,
+            name,
+            domain,
+            lastMentionedAt,
+            status,
+            createdAt,
+            updatedAt
+          FROM companies
+          WHERE id = ?
+          LIMIT 1
+        `,
+      )
+      .get(companyId) as CompanyRow | undefined;
+
+    return row ? this.mapCompanyRow(row) : null;
+  }
+
+  public listCompanies(query: ListCompaniesQuery = {}): Company[] {
+    const companies = this.getAllCompanies();
+    const search = query.search?.trim().toLowerCase();
+    const statusFilter = query.status ?? "all";
+
+    return companies.filter((company) => {
+      if (statusFilter !== "all" && company.status !== statusFilter) {
+        return false;
+      }
+
+      if (!search) {
+        return true;
+      }
+
+      return (
+        company.name.toLowerCase().includes(search) ||
+        company.domain.toLowerCase().includes(search)
+      );
+    });
+  }
+
+  public listCompaniesWithStats(
+    query: ListCompaniesQuery = {},
+  ): CompanyWithStats[] {
+    const companies = this.listCompanies(query);
+    const quarterlyMentions = this.getQuarterlyMentions();
+    const sentimentByCompany = this.groupSentimentCountsByCompany(
+      quarterlyMentions,
+    );
+
+    return companies.map((company) =>
+      this.toCompanyWithStats(company, sentimentByCompany.get(company.id)),
+    );
+  }
+
+  public getCompanyWithStats(companyId: string): CompanyWithStats | null {
+    const company = this.getCompanyById(companyId);
+    if (!company) {
+      return null;
+    }
+
+    const quarterlyMentions = this.getQuarterlyMentions({ companyId });
+    return this.toCompanyWithStats(company, countSentiments(quarterlyMentions));
+  }
+
+  public getDashboardSummary(): DashboardSummary {
+    const companies = this.getAllCompanies();
+    const quarterlyMentions = this.getQuarterlyMentions();
+    const sentimentCounts = countSentiments(quarterlyMentions);
+    const lastExecutedAt = this.getLatestAnalyzedAt();
+
+    return {
+      totalCompanies: companies.length,
+      quarterlyMentionCount: quarterlyMentions.length,
+      sentimentBreakdown: toSentimentBreakdown(sentimentCounts),
+      alertStatus: {
+        lastExecutedAt,
+        status:
+          lastExecutedAt === null
+            ? AlertJobStatus.PENDING
+            : AlertJobStatus.SUCCESS,
+      },
+    };
+  }
+
+  private toCompanyWithStats(
+    company: Company,
+    sentimentCounts?: SentimentCounts,
+  ): CompanyWithStats {
+    const daysSinceLastMention =
+      company.lastMentionedAt === null
+        ? null
+        : this.daysBetween(new Date(company.lastMentionedAt), new Date());
+
+    return {
+      ...company,
+      daysSinceLastMention,
+      sentimentCounts: sentimentCounts ?? emptySentimentCounts(),
+    };
+  }
+
+  private groupSentimentCountsByCompany(
+    mentions: Mention[],
+  ): Map<string, SentimentCounts> {
+    const byCompany = new Map<string, Mention[]>();
+
+    for (const mention of mentions) {
+      const existing = byCompany.get(mention.companyId);
+      if (existing) {
+        existing.push(mention);
+        continue;
+      }
+
+      byCompany.set(mention.companyId, [mention]);
+    }
+
+    const countsByCompany = new Map<string, SentimentCounts>();
+    for (const [companyId, companyMentions] of byCompany) {
+      countsByCompany.set(companyId, countSentiments(companyMentions));
+    }
+
+    return countsByCompany;
+  }
+
+  private getLatestAnalyzedAt(): IsoDateTimeString | null {
+    const row = this.db
+      .prepare(
+        `
+          SELECT MAX(analyzedAt) AS lastAnalyzedAt
+          FROM mentions
+        `,
+      )
+      .get() as { lastAnalyzedAt: string | null } | undefined;
+
+    return row?.lastAnalyzedAt ?? null;
   }
 
   private refreshCompanyMentionStatus(companyId: string): void {
