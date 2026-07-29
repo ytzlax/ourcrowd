@@ -1,0 +1,9 @@
+---
+alwaysApply: true
+---
+
+* **Interactive & Iterative Process:** Always break down tasks into small, incremental steps. Do NOT implement large features or generate vast amounts of code in a single response.
+* **Propose Before Code:** Before writing or modifying code, present a brief, clear outline of the exact plan/step you are about to execute.
+* **Seek Confirmation:** After outlining or completing a small unit of work (e.g., a single interface, abstract class, or sub-function), ask for user confirmation/approval before moving on to the next step.
+* **Code Volume Cap:** Keep code snippets concise and focused only on the current step. Never rewrite entire files or multiple modules at once without explicit instruction.
+* **Transparent Reasoning:** Briefly explain *why* a specific approach or pattern is chosen at each step, ensuring alignment with the project architecture before proceeding.
