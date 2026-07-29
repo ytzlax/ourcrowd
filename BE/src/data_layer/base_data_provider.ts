@@ -20,9 +20,11 @@ export abstract class BaseDataProvider {
   public async fetchMentions(query: string): Promise<RawMention[]> {
     this.query = query;
     const requestUrl = this.buildRequestUrl(query);
+    const body = this.buildRequestBody(query);
     const response = await fetch(requestUrl, {
-      method: "GET",
+      method: this.getRequestMethod(),
       headers: this.getHeaders(),
+      ...(body !== undefined ? { body } : {}),
     });
 
     if (!response.ok) {
@@ -38,6 +40,14 @@ export abstract class BaseDataProvider {
   protected abstract parseResult(raw: unknown): RawMention[];
 
   protected abstract buildRequestUrl(query: string): string;
+
+  protected getRequestMethod(): "GET" | "POST" {
+    return "GET";
+  }
+
+  protected buildRequestBody(_query: string): string | undefined {
+    return undefined;
+  }
 
   protected getHeaders(): Record<string, string> {
     return { Accept: "application/json" };

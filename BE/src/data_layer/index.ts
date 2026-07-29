@@ -6,3 +6,4 @@ export {
 
 export { GoogleRssProvider } from "./google_rss_provider.js";
 export { NewsApiProvider } from "./news_api_provider.js";
+export { TavilySearchProvider } from "./tavily_search_provider.js";
