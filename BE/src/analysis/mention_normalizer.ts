@@ -1,4 +1,4 @@
-import type { RawMention } from "../data_layer/base_data_provider.js";
+import type { Mention } from "../data_layer/base_data_provider.js";
 
 const MAX_SNIPPET_LENGTH = 2000;
 
@@ -8,7 +8,7 @@ export interface NormalizedMentionContent {
   combinedText: string;
 }
 
-export function normalizeMentionForAnalysis(mention: RawMention): NormalizedMentionContent {
+export function normalizeMentionForAnalysis(mention: Mention): NormalizedMentionContent {
   const title = cleanText(mention.title);
   const snippet = truncateText(cleanText(mention.snippet), MAX_SNIPPET_LENGTH);
 

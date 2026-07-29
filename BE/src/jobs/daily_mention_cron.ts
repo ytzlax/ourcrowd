@@ -1,5 +1,6 @@
 import cron, { type ScheduledTask } from "node-cron";
 
+import { SentimentAnalyzer, type AnalyzedMention } from "../analysis/index.js";
 import { OllamaRuntime } from "../llm/ollama_runtime.js";
 import { RoutedDataFetcher } from "../llm/routed_data_fetcher.js";
 import { fetchCompanyMentions } from "./fetch_company_mentions.js";
@@ -12,6 +13,7 @@ export interface DailyMentionCronConfig {
   schedule?: string;
   timezone?: string;
   fetcher?: RoutedDataFetcher;
+  analyzer?: SentimentAnalyzer;
 }
 
 export class DailyMentionCronJob {
@@ -19,6 +21,7 @@ export class DailyMentionCronJob {
   private readonly schedule: string;
   private readonly timezone: string;
   private readonly fetcher: RoutedDataFetcher;
+  private readonly analyzer: SentimentAnalyzer;
   private readonly ollamaRuntime: OllamaRuntime;
   private task: ScheduledTask | null = null;
 
@@ -31,6 +34,7 @@ export class DailyMentionCronJob {
     this.schedule = config.schedule ?? DEFAULT_CRON_SCHEDULE;
     this.timezone = config.timezone ?? DEFAULT_TIMEZONE;
     this.fetcher = config.fetcher ?? new RoutedDataFetcher();
+    this.analyzer = config.analyzer ?? new SentimentAnalyzer();
     this.ollamaRuntime = new OllamaRuntime();
   }
 
@@ -73,10 +77,15 @@ export class DailyMentionCronJob {
 
     for (const companyName of this.companyNames) {
       try {
+        console.time(`[DailyMentionCronJob] Fetching mentions for ${companyName}`);
         const result = await fetchCompanyMentions(companyName, this.fetcher);
-        console.log(
-          `[DailyMentionCronJob] ${companyName}: ${result.mentions.length} mentions via ${result.provider}`,
-        );
+        console.timeEnd(`[DailyMentionCronJob] Fetching mentions for ${companyName}`);
+        
+        console.time(`[DailyMentionCronJob] Analyzing mentions for ${companyName}`);
+        const analyzed = await this.analyzer.analyzeMentions({ name: companyName }, result.mentions);
+        console.timeEnd(`[DailyMentionCronJob] Analyzing mentions for ${companyName}`);
+
+        console.log(`[DailyMentionCronJob] ${companyName}: ${analyzed.length} mentions — ${formatAnalysisSummary(analyzed)}`);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.error(`[DailyMentionCronJob] Failed for ${companyName}: ${message}`);
@@ -101,6 +110,24 @@ export function createDailyMentionCronFromEnv(
     schedule: env.CRON_SCHEDULE,
     timezone: env.CRON_TIMEZONE,
   });
+}
+
+function formatAnalysisSummary(analyzed: AnalyzedMention[]): string {
+  if (analyzed.length === 0) {
+    return "no analysis";
+  }
+
+  const relevant = analyzed.filter((entry) => entry.isRelevant);
+  const sentimentCounts = relevant.reduce<Record<string, number>>((counts, entry) => {
+    counts[entry.sentiment] = (counts[entry.sentiment] ?? 0) + 1;
+    return counts;
+  }, {});
+
+  const sentimentSummary = Object.entries(sentimentCounts)
+    .map(([sentiment, count]) => `${count} ${sentiment}`)
+    .join(", ");
+
+  return `${relevant.length}/${analyzed.length} relevant${sentimentSummary ? ` (${sentimentSummary})` : ""}`;
 }
 
 function parseCompanyNames(raw: string | undefined): string[] {

@@ -24,6 +24,7 @@ export class Llm {
     this.prompt = config.prompt ?? "";
     this.system = config.system;
     this.options = config.options ?? {};
+    console.log(`[Llm] Initialized with model: ${this.model}`);
   }
 
   public async invoke(options: LlmInvokeOptions = {}): Promise<string> {
@@ -38,7 +39,7 @@ export class Llm {
     return this.parseJsonResponse<T>(raw);
   }
 
-  public async invokeStructured<T extends Record<string, unknown>>(
+  public async invokeStructured<T>(
     schema: JsonSchema,
     options: Omit<LlmInvokeOptions, "format"> = {},
   ): Promise<T> {
@@ -110,11 +111,11 @@ export class Llm {
     return payload;
   }
 
-  private parseJsonResponse<T extends Record<string, unknown>>(raw: string): T {
+  private parseJsonResponse<T>(raw: string): T {
     try {
       const parsed: unknown = JSON.parse(raw);
-      if (!this.isRecord(parsed)) {
-        throw new Error("parsed value is not a JSON object");
+      if (typeof parsed !== "object" || parsed === null) {
+        throw new Error("parsed value is not a JSON object or array");
       }
       return parsed as T;
     } catch (error) {
@@ -134,7 +135,4 @@ export class Llm {
     );
   }
 
-  private isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === "object" && value !== null && !Array.isArray(value);
-  }
 }
