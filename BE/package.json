@@ -7,13 +7,14 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "pipeline": "tsx src/index.ts",
-    "alert": "tsx src/index.ts",
+    "pipeline": "tsx src/scripts/pipeline_placeholder.ts",
+    "alert": "tsx src/scripts/pipeline_placeholder.ts",
     "cron": "tsx src/jobs/start_daily_cron.ts",
     "cron:now": "tsx src/jobs/run_daily_mention_now.ts"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.2",
+    "cors": "^2.8.6",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "fast-xml-parser": "^5.10.1",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
+    "@types/cors": "^2.8.19",
     "@types/express": "^4.17.21",
     "@types/node": "^22.10.5",
     "@types/node-cron": "^3.0.11",

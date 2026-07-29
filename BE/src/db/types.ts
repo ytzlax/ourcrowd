@@ -75,3 +75,47 @@ export interface QuarterlyMentionsQuery {
   sortBy?: QuarterlyMentionSortField;
   sortDirection?: SortDirection;
 }
+
+export interface SentimentCounts {
+  positive: number;
+  neutral: number;
+  negative: number;
+}
+
+export interface SentimentBreakdown extends SentimentCounts {
+  total: number;
+  positivePercent: number;
+  neutralPercent: number;
+  negativePercent: number;
+}
+
+export interface CompanyWithStats extends Company {
+  daysSinceLastMention: number | null;
+  sentimentCounts: SentimentCounts;
+}
+
+export enum AlertJobStatus {
+  SUCCESS = "success",
+  FAILED = "failed",
+  PENDING = "pending",
+}
+
+export interface AlertStatus {
+  /** Proxy derived from the latest mention.analyzedAt across the portfolio. */
+  lastExecutedAt: IsoDateTimeString | null;
+  status: AlertJobStatus;
+}
+
+export interface DashboardSummary {
+  totalCompanies: number;
+  quarterlyMentionCount: number;
+  sentimentBreakdown: SentimentBreakdown;
+  alertStatus: AlertStatus;
+}
+
+export type CompanyStatusFilter = MentionStatus | "all";
+
+export interface ListCompaniesQuery {
+  search?: string;
+  status?: CompanyStatusFilter;
+}

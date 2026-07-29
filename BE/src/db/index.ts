@@ -10,4 +10,9 @@ export {
   type DatabaseConnectionOptions,
 } from "./connection.js";
 export { ensureSchema } from "./schema.js";
+export {
+  countSentiments,
+  emptySentimentCounts,
+  toSentimentBreakdown,
+} from "./sentiment_stats.js";
 export * from "./types.js";
