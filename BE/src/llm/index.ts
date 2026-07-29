@@ -1,5 +1,6 @@
 export { Llm } from "./llm.js";
 export { LlmRouter } from "./llm_router.js";
+export { RoutedDataFetcher } from "./routed_data_fetcher.js";
 export { DEFAULT_LLM_MODEL, LlmModel } from "./llm_model.js";
 export type {
   JsonSchema,
@@ -14,3 +15,8 @@ export type {
   CompanyMetadata,
   RouteDecision,
 } from "./router_types.js";
+export type {
+  ProviderAttemptError,
+  RoutedDataFetcherConfig,
+  RoutedFetchResult,
+} from "./routed_data_fetcher.js";
