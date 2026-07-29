@@ -1,9 +1,10 @@
 import cron, { type ScheduledTask } from "node-cron";
 
 import { SentimentAnalyzer, type AnalyzedMention } from "../analysis/index.js";
+import { DatabaseService } from "../db/database_service.js";
 import { OllamaRuntime } from "../llm/ollama_runtime.js";
 import { RoutedDataFetcher } from "../llm/routed_data_fetcher.js";
-import { fetchCompanyMentions } from "./fetch_company_mentions.js";
+import { processCompanyMentions } from "./process_company_mentions.js";
 
 const DEFAULT_CRON_SCHEDULE = "0 6 * * *";
 const DEFAULT_TIMEZONE = "Asia/Jerusalem";
@@ -14,6 +15,7 @@ export interface DailyMentionCronConfig {
   timezone?: string;
   fetcher?: RoutedDataFetcher;
   analyzer?: SentimentAnalyzer;
+  db?: DatabaseService;
 }
 
 export class DailyMentionCronJob {
@@ -22,7 +24,9 @@ export class DailyMentionCronJob {
   private readonly timezone: string;
   private readonly fetcher: RoutedDataFetcher;
   private readonly analyzer: SentimentAnalyzer;
+  private readonly db: DatabaseService;
   private readonly ollamaRuntime: OllamaRuntime;
+  private readonly ownsDatabase: boolean;
   private task: ScheduledTask | null = null;
 
   public constructor(config: DailyMentionCronConfig) {
@@ -35,6 +39,8 @@ export class DailyMentionCronJob {
     this.timezone = config.timezone ?? DEFAULT_TIMEZONE;
     this.fetcher = config.fetcher ?? new RoutedDataFetcher();
     this.analyzer = config.analyzer ?? new SentimentAnalyzer();
+    this.db = config.db ?? new DatabaseService();
+    this.ownsDatabase = config.db === undefined;
     this.ollamaRuntime = new OllamaRuntime();
   }
 
@@ -70,6 +76,14 @@ export class DailyMentionCronJob {
     this.task = null;
   }
 
+  public close(): void {
+    this.stop();
+
+    if (this.ownsDatabase) {
+      this.db.close();
+    }
+  }
+
   public async runOnce(): Promise<void> {
     await this.ensureOllamaReady();
 
@@ -77,21 +91,33 @@ export class DailyMentionCronJob {
 
     for (const companyName of this.companyNames) {
       try {
-        console.time(`[DailyMentionCronJob] Fetching mentions for ${companyName}`);
-        const result = await fetchCompanyMentions(companyName, this.fetcher);
-        console.timeEnd(`[DailyMentionCronJob] Fetching mentions for ${companyName}`);
-        
-        console.time(`[DailyMentionCronJob] Analyzing mentions for ${companyName}`);
-        const analyzed = await this.analyzer.analyzeMentions({ name: companyName }, result.mentions);
-        console.timeEnd(`[DailyMentionCronJob] Analyzing mentions for ${companyName}`);
+        console.time(`[DailyMentionCronJob] Processing mentions for ${companyName}`);
+        const result = await processCompanyMentions(
+          { name: companyName },
+          {
+            fetcher: this.fetcher,
+            analyzer: this.analyzer,
+            db: this.db,
+          },
+        );
+        console.timeEnd(`[DailyMentionCronJob] Processing mentions for ${companyName}`);
 
-        console.log(`[DailyMentionCronJob] ${companyName}: ${analyzed.length} mentions — ${formatAnalysisSummary(analyzed)}`);
+        console.log(
+          `[DailyMentionCronJob] ${companyName}: ${result.analyzed.length} mentions ` +
+            `(${result.cacheHits} cached, ${result.analyzedByLlm} analyzed, ` +
+            `${result.saved.inserted} saved, ${result.saved.skipped} skipped) — ` +
+            `${formatAnalysisSummary(result.analyzed)}`,
+        );
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.error(`[DailyMentionCronJob] Failed for ${companyName}: ${message}`);
       }
     }
 
+    const exported = this.db.exportToJsonFiles();
+    console.log(
+      `[DailyMentionCronJob] Exported snapshots to ${exported.companiesPath} and ${exported.mentionsPath}`,
+    );
     console.log("[DailyMentionCronJob] Run complete");
   }
 

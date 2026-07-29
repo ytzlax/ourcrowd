@@ -1,4 +1,6 @@
 export { fetchCompanyMentions } from "./fetch_company_mentions.js";
+export { processCompanyMentions } from "./process_company_mentions.js";
+export type { ProcessCompanyMentionsResult } from "./process_company_mentions.js";
 export {
   DailyMentionCronJob,
   createDailyMentionCronFromEnv,

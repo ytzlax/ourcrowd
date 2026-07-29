@@ -12,7 +12,7 @@ export interface RawMention {
   source: DataProviderType;
 }
 
-export interface Mention extends Pick<RawMention, "title" | "snippet"> { }
+export type Mention = RawMention;
 export abstract class BaseDataProvider {
   protected abstract readonly providerType: DataProviderType;
   protected abstract readonly url: string;
@@ -80,10 +80,7 @@ export abstract class BaseDataProvider {
 
     const rawBody: unknown = await this.readResponseBody(response);
     const mentions = this.parseResult(rawBody);
-    return this.selectMostRecentMentions(mentions).map(mention => ({
-      title: mention.title,
-      snippet: mention.snippet
-    }));
+    return this.selectMostRecentMentions(mentions);
   }
 
   protected abstract parseResult(raw: unknown): RawMention[];
