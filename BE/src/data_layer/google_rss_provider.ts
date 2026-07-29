@@ -33,6 +33,7 @@ export class GoogleRssProvider extends BaseDataProvider {
   });
 
   protected buildRequestUrl(query: string): string {
+    console.log(`[GoogleRssProvider] Building request url for query: ${query}`);
     const params = new URLSearchParams({
       q: query,
       hl: "en-US",

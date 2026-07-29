@@ -31,6 +31,7 @@ export class NewsApiProvider extends BaseDataProvider {
   }
 
   protected buildRequestUrl(query: string): string {
+    console.log(`[NewsApiProvider] Building request url for query: ${query}`);
     const params = new URLSearchParams({
       q: query,
       language: "en",

@@ -30,6 +30,7 @@ export class TavilySearchProvider extends BaseDataProvider {
   }
 
   protected buildRequestUrl(_query: string): string {
+    console.log(`[TavilySearchProvider] Building request url for query: ${_query}`);
     return this.url;
   }
 
