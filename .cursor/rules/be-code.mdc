@@ -1,0 +1,86 @@
+---
+alwaysApply: true
+---
+
+# Server-Side Engineering & Architecture Guidelines
+
+You are an expert Full-Stack Software Engineer specializing in TypeScript, Node.js, and Modular Architecture. Follow these strict rules and patterns when generating or modifying backend code.
+
+---
+
+## 1. Core Language & Coding Practices
+
+* **Language:** Write 100% strict TypeScript. Do not use standard JavaScript or dynamic untyped objects (`any`).
+* **Strong Typing & Enums:**
+  * Avoid raw hardcoded strings for types, status codes, sentiment levels, or providers.
+  * Define and use **TypeScript Enums** or `const` assertions for all domain constants (e.g., `SentimentType`, `DataProviderType`, `MentionStatus`).
+* **Object-Oriented Design (Classes):**
+  * Structure services and components using TypeScript `Classes`.
+  * Adhere to SOLID principles, ensuring encapsulation, single responsibility, and interface abstraction.
+* **Function Granularity & Reusability:**
+  * Keep functions small, focused, pure (where applicable), and highly reusable.
+  * Extract shared helper functions (e.g., date formats, URL parsing, text cleaning) into a central `utils/` directory.
+* **File Length & Modularization:**
+  * Avoid long, monolithic files. Keep files concise and focused on a single responsibility.
+  * If a file exceeds ~150–200 lines, decompose it into sub-modules, strategies, or helper files.
+
+---
+
+## 2. Directory & Repository Structure
+
+Organize the workspace into a clean root structure with split **Frontend (FE)** and **Backend (BE)** directories:
+
+```text
+root/
+├── FE/                        # Client application dashboard
+└── BE/                        # Server application & services
+    ├── src/
+    │   ├── data_layer/        # Data collection & Providers
+    │   ├── analysis/          # Analysis & Ollama LLM Classification
+    │   ├── llm/               # LLM Infrastructure & Router
+    │   ├── jobs/              # Scheduled Cron Jobs (Daily Alerts)
+    │   ├── db/                # Persistence Layer (Database / File Adapters)
+    │   ├── gateway/           # Express/Fastify Controllers & API Routes
+    │   └── utils/             # Shared Utilities & Helpers
+    ├── package.json
+    └── tsconfig.json
+```
+3. Data Acquisition Layer Architecture
+The BE/src/data_layer/ directory must follow an Object-Oriented polymorphism pattern:
+
+Base Class:
+
+Create an abstract class BaseDataProvider (or AbstractDataProvider) defining common functionality, rate limiting, logging, and an abstract contract method like fetchMentions(query: SearchQuery): Promise<RawMention[]>.
+
+Concrete Providers:
+
+Individual data sources must inherit from BaseDataProvider.
+
+Implement concrete provider classes such as:
+
+GoogleRssProvider extends BaseDataProvider
+
+TavilySearchProvider extends BaseDataProvider
+
+NewsApiProvider extends BaseDataProvider
+
+Provider Factory & Interfaces:
+
+Use an Enum to reference available providers.
+
+Instantiate data providers via a unified Factory pattern or Data Aggregator service to decouple providers from the business logic.
+
+4. Layer Responsibilities Summary
+BE/src/data_layer/: Sourcing external news, handling HTTP fetching, provider fallbacks, and raw response parsing.
+
+BE/src/analysis/: Normalizing raw news content and defining prompts for LLM sentiment analysis.
+
+BE/src/llm/: Interfacing directly with local Ollama models, constructing routing prompts, and performing smart search query disambiguation.
+
+BE/src/jobs/: Running background/cron tasks (e.g., daily mention monitoring and alert dispatching).
+
+BE/src/db/: Storing companies, quarterly mentions, raw payload outputs, and status calculations.
+
+BE/src/gateway/: Defining API endpoints to expose quarterly stats, company mention statuses, and health metrics to the FE client.
+
+BE/src/utils/: Reusable math, date manipulation, validation, and parsing functions.
