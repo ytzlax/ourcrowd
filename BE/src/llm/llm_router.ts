@@ -20,7 +20,7 @@ export class LlmRouter {
   public constructor(llmConfig: LlmConfig = {}) {
     this.llm = new Llm({
       ...llmConfig,
-      model: LlmModel.LLAMA_3_2,
+      model: LlmModel.QWEN_2_5_0_5B,
       system: llmConfig.system ?? ROUTER_SYSTEM_PROMPT,
       options: { temperature: 0.1, ...llmConfig.options },
     });

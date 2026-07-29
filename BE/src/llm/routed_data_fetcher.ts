@@ -57,7 +57,7 @@ export class RoutedDataFetcher {
       attemptedProviders.push(providerType);
 
       try {
-        const mentions = await provider.fetchMentions(routeDecision.query);
+        const mentions = await provider.fetchMentions(company.name);
         return {
           mentions,
           provider: providerType,
