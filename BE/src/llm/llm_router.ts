@@ -57,8 +57,7 @@ export class LlmRouter {
       "Return JSON with:",
       "- provider: one of GOOGLE_RSS, TAVILY, NEWS_API",
       "- query: the final optimized search query string",
-      "- is_ambiguous: true if the company name is likely to produce noisy unrelated results",
-      "- reasoning: brief explanation of provider and query choice",
+      "- is_ambiguous: true if the company name is likely to produce noisy unrelated results"
     ].join("\n");
   }
 
@@ -74,7 +73,6 @@ export class LlmRouter {
       provider,
       query,
       isAmbiguous: raw.is_ambiguous,
-      reasoning: raw.reasoning.trim(),
     };
   }
 

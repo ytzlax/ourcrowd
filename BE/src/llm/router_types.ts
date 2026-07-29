@@ -11,14 +11,12 @@ export interface RouteDecision {
   provider: DataProviderType;
   query: string;
   isAmbiguous: boolean;
-  reasoning: string;
 }
 
 export interface RawRouteDecision extends Record<string, unknown> {
   provider: string;
   query: string;
   is_ambiguous: boolean;
-  reasoning: string;
 }
 
 export const ROUTE_DECISION_SCHEMA: JsonSchema = {
@@ -33,8 +31,7 @@ export const ROUTE_DECISION_SCHEMA: JsonSchema = {
       ],
     },
     query: { type: "string" },
-    is_ambiguous: { type: "boolean" },
-    reasoning: { type: "string" },
+    is_ambiguous: { type: "boolean" }
   },
-  required: ["provider", "query", "is_ambiguous", "reasoning"],
+  required: ["provider", "query", "is_ambiguous"],
 };
