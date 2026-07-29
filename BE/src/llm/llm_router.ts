@@ -7,6 +7,7 @@ import {
   type RawRouteDecision,
   type RouteDecision,
 } from "./router_types.js";
+import { LlmModel } from "./llm_model.js";
 
 const ROUTER_SYSTEM_PROMPT =
   "You are a news search routing assistant for a venture portfolio monitoring system. " +
@@ -19,6 +20,7 @@ export class LlmRouter {
   public constructor(llmConfig: LlmConfig = {}) {
     this.llm = new Llm({
       ...llmConfig,
+      model: LlmModel.LLAMA_3_2,
       system: llmConfig.system ?? ROUTER_SYSTEM_PROMPT,
       options: { temperature: 0.1, ...llmConfig.options },
     });

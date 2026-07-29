@@ -1,5 +1,6 @@
 import type { Mention, RawMention } from "../data_layer/base_data_provider.js";
 import { Llm } from "../llm/llm.js";
+import { LlmModel } from "../llm/llm_model.js";
 import type { CompanyMetadata } from "../llm/router_types.js";
 import type { LlmConfig } from "../llm/types.js";
 import {
@@ -28,6 +29,7 @@ export class SentimentAnalyzer {
   public constructor(config: SentimentAnalyzerConfig = {}) {
     this.llm = new Llm({
       ...config.llm,
+      model: LlmModel.QWEN_2_5_0_5B,
       system: config.llm?.system ?? SENTIMENT_SYSTEM_PROMPT,
       options: { temperature: 0.1, ...config.llm?.options },
     });
