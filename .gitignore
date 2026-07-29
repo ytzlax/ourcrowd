@@ -23,6 +23,6 @@ Thumbs.db
 *.log
 npm-debug.log*
 
-# Coverage / test
-coverage/
-.nyc_output/
+# Runtime data
+data/
+

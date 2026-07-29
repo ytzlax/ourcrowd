@@ -10,4 +10,6 @@ try {
   const message = error instanceof Error ? error.message : String(error);
   console.error(`[DailyMentionCronJob] Run aborted: ${message}`);
   process.exit(1);
+} finally {
+  cronJob.close();
 }
