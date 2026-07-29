@@ -5,4 +5,4 @@ export enum LlmModel {
   LLAMA_3_2_3B = "llama3.2:3b",
 }
 
-export const DEFAULT_LLM_MODEL = LlmModel.LLAMA_3_2;
+export const DEFAULT_LLM_MODEL = LlmModel.LLAMA_3_2_1B;

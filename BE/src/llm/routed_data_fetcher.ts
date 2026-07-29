@@ -5,7 +5,7 @@ import {
 } from "../data_layer/provider_factory.js";
 import {
   DataProviderType,
-  type RawMention,
+  type Mention,
 } from "../data_layer/base_data_provider.js";
 import { LlmRouter } from "./llm_router.js";
 import type { LlmConfig } from "./types.js";
@@ -17,7 +17,7 @@ export interface ProviderAttemptError {
 }
 
 export interface RoutedFetchResult {
-  mentions: RawMention[];
+  mentions: Mention[];
   provider: DataProviderType;
   routeDecision: RouteDecision;
   attemptedProviders: DataProviderType[];
