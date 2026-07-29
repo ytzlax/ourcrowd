@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-display: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+}
+
+:root {
+  --background: oklch(0.975 0.008 230);
+  --foreground: oklch(0.22 0.03 250);
+  --card: oklch(0.995 0.002 230);
+  --card-foreground: oklch(0.22 0.03 250);
+  --muted: oklch(0.945 0.01 230);
+  --muted-foreground: oklch(0.48 0.02 250);
+  --border: oklch(0.88 0.015 230);
+  --primary: oklch(0.4 0.09 240);
+  --primary-foreground: oklch(0.99 0 0);
+  --destructive: oklch(0.55 0.18 25);
+  --success: oklch(0.5 0.12 150);
+  --warning: oklch(0.78 0.12 85);
+  --radius: 0.625rem;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 80% 50% at 0% -10%, oklch(0.92 0.03 230), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 0%, oklch(0.94 0.02 200), transparent),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.mentions-drawer {
+  position: fixed;
+  inset: 0 auto 0 auto;
+  margin: 0 0 0 auto;
+  width: min(28rem, 100vw);
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  border: none;
+  border-left: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  padding: 0;
+  box-shadow: -12px 0 40px oklch(0.2 0.02 250 / 0.12);
+}
+
+.mentions-drawer::backdrop {
+  background-color: oklch(0.2 0.02 250 / 0.35);
+  backdrop-filter: blur(2px);
+}
+
+.mentions-drawer[open] {
+  animation: drawer-in 200ms ease-out;
+}
+
+@keyframes drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mentions-drawer[open] {
+    animation: none;
+  }
+}
