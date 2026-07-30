@@ -11,6 +11,8 @@ import {
 } from "./sentiment_stats.js";
 import {
   AlertJobStatus,
+  CompanyType,
+  MediaPresence,
   MentionStatus,
   type Company,
   type CompanyInput,
@@ -35,11 +37,25 @@ interface CompanyRow {
   id: string;
   name: string;
   domain: string;
+  companyType: CompanyType;
+  mediaPresence: MediaPresence;
   lastMentionedAt: string | null;
   status: MentionStatus;
   createdAt: string;
   updatedAt: string;
 }
+
+const COMPANY_SELECT_COLUMNS = `
+  id,
+  name,
+  domain,
+  companyType,
+  mediaPresence,
+  lastMentionedAt,
+  status,
+  createdAt,
+  updatedAt
+`;
 
 interface MentionRow {
   id: string;
@@ -82,14 +98,7 @@ export class DatabaseService {
     const row = this.db
       .prepare(
         `
-          SELECT
-            id,
-            name,
-            domain,
-            lastMentionedAt,
-            status,
-            createdAt,
-            updatedAt
+          SELECT ${COMPANY_SELECT_COLUMNS}
           FROM companies
           WHERE lower(name) = lower(?)
           LIMIT 1
@@ -100,14 +109,40 @@ export class DatabaseService {
     return row ? this.mapCompanyRow(row) : null;
   }
 
-  public ensureCompany(input: { name: string; domain?: string }): Company {
+  public ensureCompany(input: {
+    name: string;
+    domain?: string;
+    companyType?: CompanyType;
+    mediaPresence?: MediaPresence;
+  }): Company {
     const existing = this.getCompanyByName(input.name);
     if (existing) {
-      return existing;
+      if (input.companyType === undefined && input.mediaPresence === undefined) {
+        return existing;
+      }
+
+      return this.seedCompanies([
+        {
+          id: existing.id,
+          name: existing.name,
+          domain: existing.domain,
+          companyType: input.companyType ?? existing.companyType,
+          mediaPresence: input.mediaPresence ?? existing.mediaPresence,
+          lastMentionedAt: existing.lastMentionedAt,
+          status: existing.status,
+        },
+      ])[0];
     }
 
     const domain = input.domain ?? this.domainPlaceholderFromName(input.name);
-    return this.seedCompanies([{ name: input.name, domain }])[0];
+    return this.seedCompanies([
+      {
+        name: input.name,
+        domain,
+        companyType: input.companyType,
+        mediaPresence: input.mediaPresence,
+      },
+    ])[0];
   }
 
   public seedCompanies(companiesList: CompanyInput[]): Company[] {
@@ -117,6 +152,8 @@ export class DatabaseService {
         id,
         name,
         domain,
+        companyType,
+        mediaPresence,
         lastMentionedAt,
         status,
         createdAt,
@@ -126,6 +163,8 @@ export class DatabaseService {
         @id,
         @name,
         @domain,
+        @companyType,
+        @mediaPresence,
         @lastMentionedAt,
         @status,
         @createdAt,
@@ -134,6 +173,8 @@ export class DatabaseService {
       ON CONFLICT(id) DO UPDATE SET
         name = excluded.name,
         domain = excluded.domain,
+        companyType = excluded.companyType,
+        mediaPresence = excluded.mediaPresence,
         updatedAt = excluded.updatedAt
     `);
 
@@ -147,6 +188,8 @@ export class DatabaseService {
           id,
           name: company.name,
           domain: company.domain,
+          companyType: company.companyType ?? CompanyType.B2B,
+          mediaPresence: company.mediaPresence ?? MediaPresence.NICHE_TECH,
           lastMentionedAt: company.lastMentionedAt ?? null,
           status: company.status ?? MentionStatus.NO_COVERAGE_FOUND,
           createdAt,
@@ -423,14 +466,7 @@ export class DatabaseService {
     const row = this.db
       .prepare(
         `
-          SELECT
-            id,
-            name,
-            domain,
-            lastMentionedAt,
-            status,
-            createdAt,
-            updatedAt
+          SELECT ${COMPANY_SELECT_COLUMNS}
           FROM companies
           WHERE id = ?
           LIMIT 1
@@ -584,14 +620,7 @@ export class DatabaseService {
     const rows = this.db
       .prepare(
         `
-          SELECT
-            id,
-            name,
-            domain,
-            lastMentionedAt,
-            status,
-            createdAt,
-            updatedAt
+          SELECT ${COMPANY_SELECT_COLUMNS}
           FROM companies
           ORDER BY name ASC
         `,
@@ -631,6 +660,8 @@ export class DatabaseService {
       id: row.id,
       name: row.name,
       domain: row.domain,
+      companyType: row.companyType,
+      mediaPresence: row.mediaPresence,
       lastMentionedAt: row.lastMentionedAt,
       status: row.status,
       createdAt: row.createdAt,

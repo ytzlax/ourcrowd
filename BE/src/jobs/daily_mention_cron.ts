@@ -2,7 +2,9 @@ import cron, { type ScheduledTask } from "node-cron";
 
 import { SentimentAnalyzer, type AnalyzedMention } from "../analysis/index.js";
 import { DatabaseService } from "../db/database_service.js";
+import type { Company } from "../db/types.js";
 import { OllamaRuntime } from "../llm/ollama_runtime.js";
+import type { CompanyMetadata } from "../llm/router_types.js";
 import { RoutedDataFetcher } from "../llm/routed_data_fetcher.js";
 import { processCompanyMentions } from "./process_company_mentions.js";
 
@@ -10,7 +12,6 @@ const DEFAULT_CRON_SCHEDULE = "0 6 * * *";
 const DEFAULT_TIMEZONE = "Asia/Jerusalem";
 
 export interface DailyMentionCronConfig {
-  companyNames: string[];
   schedule?: string;
   timezone?: string;
   fetcher?: RoutedDataFetcher;
@@ -19,7 +20,7 @@ export interface DailyMentionCronConfig {
 }
 
 export class DailyMentionCronJob {
-  private readonly companyNames: string[];
+  private readonly companies: CompanyMetadata[];
   private readonly schedule: string;
   private readonly timezone: string;
   private readonly fetcher: RoutedDataFetcher;
@@ -29,18 +30,14 @@ export class DailyMentionCronJob {
   private readonly ownsDatabase: boolean;
   private task: ScheduledTask | null = null;
 
-  public constructor(config: DailyMentionCronConfig) {
-    if (config.companyNames.length === 0) {
-      throw new Error("[DailyMentionCronJob] At least one company name is required");
-    }
-
-    this.companyNames = config.companyNames;
+  public constructor(config: DailyMentionCronConfig = {}) {
+    this.db = config.db ?? new DatabaseService();
+    this.ownsDatabase = config.db === undefined;
+    this.companies = this.loadCompaniesFromDb();
     this.schedule = config.schedule ?? DEFAULT_CRON_SCHEDULE;
     this.timezone = config.timezone ?? DEFAULT_TIMEZONE;
     this.fetcher = config.fetcher ?? new RoutedDataFetcher();
     this.analyzer = config.analyzer ?? new SentimentAnalyzer();
-    this.db = config.db ?? new DatabaseService();
-    this.ownsDatabase = config.db === undefined;
     this.ollamaRuntime = new OllamaRuntime();
   }
 
@@ -62,7 +59,7 @@ export class DailyMentionCronJob {
     );
 
     console.log(
-      `[DailyMentionCronJob] Scheduled daily run (${this.schedule}, ${this.timezone}) for ${this.companyNames.length} companies`,
+      `[DailyMentionCronJob] Scheduled daily run (${this.schedule}, ${this.timezone}) for ${this.companies.length} companies`,
     );
 
     void this.ensureOllamaReady().catch((error: unknown) => {
@@ -87,30 +84,27 @@ export class DailyMentionCronJob {
   public async runOnce(): Promise<void> {
     await this.ensureOllamaReady();
 
-    console.log(`[DailyMentionCronJob] Starting run for ${this.companyNames.length} companies`);
+    console.log(`[DailyMentionCronJob] Starting run for ${this.companies.length} companies`);
 
-    for (const companyName of this.companyNames) {
+    for (const company of this.companies) {
       try {
-        console.time(`[DailyMentionCronJob] Processing mentions for ${companyName}`);
-        const result = await processCompanyMentions(
-          { name: companyName },
-          {
-            fetcher: this.fetcher,
-            analyzer: this.analyzer,
-            db: this.db,
-          },
-        );
-        console.timeEnd(`[DailyMentionCronJob] Processing mentions for ${companyName}`);
+        console.time(`[DailyMentionCronJob] Processing mentions for ${company.name}`);
+        const result = await processCompanyMentions(company, {
+          fetcher: this.fetcher,
+          analyzer: this.analyzer,
+          db: this.db,
+        });
+        console.timeEnd(`[DailyMentionCronJob] Processing mentions for ${company.name}`);
 
         console.log(
-          `[DailyMentionCronJob] ${companyName}: ${result.analyzed.length} mentions ` +
+          `[DailyMentionCronJob] ${company.name}: ${result.analyzed.length} mentions ` +
             `(${result.cacheHits} cached, ${result.analyzedByLlm} analyzed, ` +
             `${result.saved.inserted} saved, ${result.saved.skipped} skipped) — ` +
             `${formatAnalysisSummary(result.analyzed)}`,
         );
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        console.error(`[DailyMentionCronJob] Failed for ${companyName}: ${message}`);
+        console.error(`[DailyMentionCronJob] Failed for ${company.name}: ${message}`);
       }
     }
 
@@ -124,18 +118,36 @@ export class DailyMentionCronJob {
   private async ensureOllamaReady(): Promise<void> {
     await this.ollamaRuntime.ensureReady();
   }
+
+  private loadCompaniesFromDb(): CompanyMetadata[] {
+    const companies = this.db.listCompanies().map(toCompanyMetadata);
+
+    if (companies.length === 0) {
+      throw new Error(
+        "[DailyMentionCronJob] No companies found in the database — load companies first",
+      );
+    }
+
+    return companies;
+  }
 }
 
 export function createDailyMentionCronFromEnv(
   env: NodeJS.ProcessEnv = process.env,
 ): DailyMentionCronJob {
-  const companyNames = parseCompanyNames(env.MONITORED_COMPANIES);
-
   return new DailyMentionCronJob({
-    companyNames,
     schedule: env.CRON_SCHEDULE,
     timezone: env.CRON_TIMEZONE,
   });
+}
+
+function toCompanyMetadata(company: Company): CompanyMetadata {
+  return {
+    name: company.name,
+    domain: company.domain,
+    companyType: company.companyType,
+    mediaPresence: company.mediaPresence,
+  };
 }
 
 function formatAnalysisSummary(analyzed: AnalyzedMention[]): string {
@@ -154,17 +166,4 @@ function formatAnalysisSummary(analyzed: AnalyzedMention[]): string {
     .join(", ");
 
   return `${relevant.length}/${analyzed.length} relevant${sentimentSummary ? ` (${sentimentSummary})` : ""}`;
-}
-
-function parseCompanyNames(raw: string | undefined): string[] {
-  if (!raw?.trim()) {
-    throw new Error(
-      "[DailyMentionCronJob] MONITORED_COMPANIES env var is required (comma-separated company names)",
-    );
-  }
-
-  return raw
-    .split(",")
-    .map((name) => name.trim())
-    .filter((name) => name.length > 0);
 }
