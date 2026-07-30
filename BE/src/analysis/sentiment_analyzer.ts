@@ -1,13 +1,11 @@
 import type { Mention, RawMention } from "../data_layer/base_data_provider.js";
 import { Llm } from "../llm/llm.js";
-import { LlmModel, DEFAULT_LLM_MODEL } from "../llm/llm_model.js";
+import { LlmModel } from "../llm/llm_model.js";
 import type { CompanyMetadata } from "../data_layer/router_types.js";
 import type { LlmConfig } from "../llm/types.js";
 import {
-  BATCH_SENTIMENT_DECISION_SCHEMA,
   SENTIMENT_DECISION_SCHEMA,
   type AnalyzedMention,
-  type RawBatchSentimentItem,
   type RawSentimentDecision,
 } from "./analysis_types.js";
 import { normalizeMentionForAnalysis } from "./mention_normalizer.js";
@@ -49,79 +47,18 @@ export class SentimentAnalyzer {
     company: CompanyMetadata,
     mentions: Mention[],
   ): Promise<AnalyzedMention[]> {
-    if (mentions.length === 0) {
-      return [];
-    }
-
-    if (mentions.length === 1) {
-      const result = await this.analyzeMention(company, mentions[0]);
-      return result.isRelevant ? [result] : [];
-    }
-
-    return this.analyzeMentionsBatch(company, mentions);
-  }
-
-  private async analyzeMentionsBatch(
-    company: CompanyMetadata,
-    mentions: Mention[],
-  ): Promise<AnalyzedMention[]> {
-    this.llm.prompt = this.buildBatchAnalysisPrompt(company, mentions);
-    const rawItems = await this.llm.invokeStructured<RawBatchSentimentItem[]>(
-      BATCH_SENTIMENT_DECISION_SCHEMA,
-    );
-
     const results: AnalyzedMention[] = [];
 
-    for (let idx = 0; idx < mentions.length; idx++) {
-      const mention = mentions[idx];
-      const raw = this.resolveBatchItem(rawItems, idx);
-
-      if (raw) {
-        const result = this.normalizeResult(company.name, mention, raw);
-        if (result.isRelevant) {
-          results.push(result);
-        }
-        continue;
-      }
-
-      console.warn(
-        `[SentimentAnalyzer] Batch missing index ${idx} for "${mention.title}"; falling back to single analysis`,
-      );
-      const fallback = await this.analyzeMention(company, mention);
-      if (fallback.isRelevant) {
-        results.push(fallback);
+    for (const mention of mentions) {
+      const result = await this.analyzeMention(company, mention);
+      if (result.isRelevant) {
+        results.push(result);
       }
     }
 
     return results;
   }
 
-  private resolveBatchItem(
-    rawItems: RawBatchSentimentItem[],
-    idx: number,
-  ): RawBatchSentimentItem | undefined {
-    const byIndex = rawItems.find((item) => Number(item.index) === idx);
-    if (byIndex) {
-      return byIndex;
-    }
-
-    const positional = rawItems[idx];
-    if (positional && this.isUsableSentimentDecision(positional)) {
-      return positional;
-    }
-
-    return undefined;
-  }
-
-  private isUsableSentimentDecision(
-    item: RawBatchSentimentItem,
-  ): item is RawBatchSentimentItem {
-    return (
-      typeof item.is_relevant === "boolean" &&
-      typeof item.sentiment === "string" &&
-      typeof item.summary === "string"
-    );
-  }
 
   private buildAnalysisPrompt(
     company: CompanyMetadata,
@@ -141,86 +78,35 @@ export class SentimentAnalyzer {
       normalized.combinedText,
     ].filter((line): line is string => line !== null);
 
-    return [
-      "Analyze the following news mention for the portfolio company.",
-      "",
-      ...this.formatCompanyMetadata(company),
-      "",
-      "Article:",
-      ...articleLines,
-      "",
-      ...this.analysisGuidelines("single"),
-      "",
-      "Return JSON with:",
-      "- is_relevant: boolean",
-      "- sentiment: 'positive' | 'negative' | 'neutral' (use 'neutral' if is_relevant is false)",
-      "- summary: brief takeaway",
-    ].join("\n");
-  }
 
-  private buildBatchAnalysisPrompt(
-    company: CompanyMetadata,
-    mentions: Mention[],
-  ): string {
-    const mentionBlocks = mentions.map((mention, idx) => {
-      const normalized = normalizeMentionForAnalysis(mention);
+    return `
+    Analyze the following news mention for the portfolio company.
+    Company detail:
+    - Name: ${company.name}
+    - Context : ${company.context}
+    Article:
+    ${articleLines.join("\n")}
 
-      return [
-        `[${idx}]`,
-        `  Title: ${normalized.title}`,
-        `  Content: ${normalized.combinedText}`,
-      ].join("\n");
-    });
+     Tasks:
+     1. Determine if the article is genuinely about this specific tech company/startup.
+     2. If relevant, classify sentiment as positive, negative, or neutral for the company's business outlook.
+     3. Provide a one-sentence summary of the mention's key takeaway (or 'N/A' if not relevant).
+     Relevance guidelines (is_relevant):
+     - Set is_relevant = true IF: The article directly discusses, news-reports on, or features this specific company or its products/executives.
+     - Set is_relevant = false IF:
+     - The name appears only as a general noun, phrase, or technical term (e.g., '3D signals', 'island', 'wave') rather than the company as a proper noun.
+     - The article is about an entirely different company/person with a similar or identical name.
+     - The company name is merely listed in a footer, tag cloud, or automated disclaimer without actual reporting on the company.
+     Sentiment guidelines:
+     - positive: funding, acquisitions, strategic partnerships, product launches, revenue growth, industry awards
+     - negative: layoffs, lawsuits, security breaches, regulatory sanctions, product failures, financial loss
+     - neutral: routine corporate announcements, balanced reporting, or general industry roundups
 
-    return [
-      `Analyze the following ${mentions.length} news mentions for the portfolio company.`,
-      "",
-      ...this.formatCompanyMetadata(company),
-      "",
-      "Mentions:",
-      ...mentionBlocks,
-      "",
-      ...this.analysisGuidelines("batch"),
-      "",
-      "Return a JSON array with one object per mention, each containing:",
-      "- index: the mention index number from the list above",
-      "- is_relevant: boolean",
-      "- sentiment: one of positive, negative, neutral (use neutral if not relevant)",
-      "- summary: brief takeaway",
-    ].join("\n");
-  }
-
-  private formatCompanyMetadata(company: CompanyMetadata): string[] {
-    const metadataLines = [
-      `Company name: ${company.name}`,
-      company.sector ? `Sector/Domain: ${company.sector}` : null,
-      company.context ? `Context: ${company.context}` : null,
-    ].filter((line): line is string => line !== null);
-
-    return ["Company metadata:", ...metadataLines.map((line) => `- ${line}`)];
-  }
-
-  private analysisGuidelines(mode: "single" | "batch"): string[] {
-    const tasksHeading = mode === "batch" ? "Tasks (for each mention):" : "Tasks:";
-
-    return [
-      tasksHeading,
-      "1. Determine if the article is genuinely about this specific tech company/startup.",
-      "2. If relevant, classify sentiment as positive, negative, or neutral for the company's business outlook.",
-      "3. Provide a one-sentence summary of the mention's key takeaway (or 'N/A' if not relevant).",
-      "",
-      "Relevance guidelines (is_relevant):",
-      "- Set is_relevant = true IF: The article directly discusses, news-reports on, or features this specific company or its products/executives.",
-      "- Set is_relevant = false IF:",
-      "  * The name appears only as a general noun, phrase, or technical term (e.g., '3D signals', 'island', 'wave') rather than the company as a proper noun.",
-      "  * The article is about an entirely different company/person with a similar or identical name.",
-      "  * The company name is merely listed in a footer, tag cloud, or automated disclaimer without actual reporting on the company.",
-      "",
-      "Sentiment guidelines:",
-      "- positive: funding, acquisitions, strategic partnerships, product launches, revenue growth, industry awards",
-      "- negative: layoffs, lawsuits, security breaches, regulatory sanctions, product failures, financial loss",
-      "- neutral: routine corporate announcements, balanced reporting, or general industry roundups",
-    ];
+    Return JSON with:
+    - is_relevant: boolean
+    - sentiment: 'positive' | 'negative' | 'neutral'
+    - summary: brief takeaway
+    `;
   }
 
   private normalizeResult(

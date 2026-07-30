@@ -32,31 +32,3 @@ export const SENTIMENT_DECISION_SCHEMA: JsonSchema = {
   },
   required: ["is_relevant", "sentiment", "summary"],
 };
-
-export interface RawBatchSentimentItem extends Record<string, unknown> {
-  index: number;
-  is_relevant: boolean;
-  sentiment: string;
-  summary: string;
-}
-
-export const BATCH_SENTIMENT_DECISION_SCHEMA: JsonSchema = {
-  type: "array",
-  items: {
-    type: "object",
-    properties: {
-      index: { type: "integer", description: "Zero-based index of the mention in the input list" },
-      is_relevant: { type: "boolean" },
-      sentiment: {
-        type: "string",
-        enum: [
-          SentimentType.POSITIVE,
-          SentimentType.NEGATIVE,
-          SentimentType.NEUTRAL,
-        ],
-      },
-      summary: { type: "string" },
-    },
-    required: ["index", "is_relevant", "sentiment", "summary"],
-  },
-};
