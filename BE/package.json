@@ -11,6 +11,10 @@
     "alert": "tsx src/scripts/pipeline_placeholder.ts",
     "cron": "tsx src/jobs/start_daily_cron.ts",
     "cron:now": "tsx src/jobs/run_daily_mention_now.ts",
+    "fetch-cron": "tsx src/jobs/start_mention_fetch_cron.ts",
+    "fetch-cron:now": "tsx src/jobs/run_mention_fetch_now.ts",
+    "analysis-cron": "tsx src/jobs/start_mention_analysis_cron.ts",
+    "analysis-cron:now": "tsx src/jobs/run_mention_analysis_now.ts",
     "load-companies": "tsx src/data_processing/run_load_companies.ts",
     "enrich-companies": "tsx src/data_processing/run_enrich_companies.ts"
   },

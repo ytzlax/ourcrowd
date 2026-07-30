@@ -34,8 +34,9 @@ export class GoogleRssProvider extends BaseDataProvider {
 
   protected buildRequestUrl(query: string): string {
     console.log(`[GoogleRssProvider] Building request url for query: ${query}`);
+    const exactQuery = `"${query}"`;
     const params = new URLSearchParams({
-      q: query,
+      q: exactQuery,
       hl: "en-US",
       gl: "US",
       ceid: "US:en",

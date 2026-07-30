@@ -82,6 +82,48 @@ export interface SaveMentionsResult {
   skipped: number;
 }
 
+export enum QueuedMentionStatus {
+  PENDING = "PENDING",
+  PROCESSING = "PROCESSING",
+  DONE = "DONE",
+  FAILED = "FAILED",
+}
+
+export interface QueuedMention {
+  id: string;
+  companyId: string;
+  companyName: string;
+  title: string;
+  url: string;
+  snippet: string | null;
+  publishedAt: IsoDateTimeString;
+  provider: string;
+  status: QueuedMentionStatus;
+  fetchedAt: IsoDateTimeString;
+  errorMessage: string | null;
+  retryCount: number;
+}
+
+export interface QueuedMentionInput {
+  id?: string;
+  companyId: string;
+  companyName: string;
+  title: string;
+  url: string;
+  snippet: string | null;
+  publishedAt: IsoDateTimeString;
+  provider: string;
+  status?: QueuedMentionStatus;
+  fetchedAt?: IsoDateTimeString;
+  errorMessage?: string | null;
+  retryCount?: number;
+}
+
+export interface SaveQueuedMentionsResult {
+  inserted: number;
+  skipped: number;
+}
+
 export type QuarterlyMentionSortField = "publishedAt" | "sentiment" | "createdAt";
 export type SortDirection = "asc" | "desc";
 

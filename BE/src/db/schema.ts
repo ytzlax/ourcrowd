@@ -4,6 +4,7 @@ import {
   CompanyType,
   MediaPresence,
   MentionStatus,
+  QueuedMentionStatus,
   SentimentType,
 } from "./types.js";
 
@@ -24,6 +25,10 @@ const COMPANY_TYPE_VALUES = Object.values(CompanyType)
   .join(", ");
 
 const MEDIA_PRESENCE_VALUES = Object.values(MediaPresence)
+  .map((value) => quoteSqlString(value))
+  .join(", ");
+
+const QUEUED_MENTION_STATUS_VALUES = Object.values(QueuedMentionStatus)
   .map((value) => quoteSqlString(value))
   .join(", ");
 
@@ -81,6 +86,63 @@ export function ensureSchema(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_mentions_createdAt
       ON mentions(createdAt);
   `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS q_mentions (
+      id TEXT PRIMARY KEY,
+      companyId TEXT NOT NULL,
+      companyName TEXT NOT NULL,
+      title TEXT NOT NULL,
+      url TEXT NOT NULL,
+      snippet TEXT NULL,
+      publishedAt TEXT NOT NULL,
+      provider TEXT NOT NULL,
+      status TEXT NOT NULL
+        DEFAULT ${quoteSqlString(QueuedMentionStatus.PENDING)}
+        CHECK (status IN (${QUEUED_MENTION_STATUS_VALUES})),
+      fetchedAt TEXT NOT NULL,
+      errorMessage TEXT NULL,
+      retryCount INTEGER NOT NULL DEFAULT 0,
+      UNIQUE (companyId, url),
+      FOREIGN KEY (companyId) REFERENCES companies(id) ON DELETE CASCADE
+    );
+  `);
+
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_q_mentions_status
+      ON q_mentions(status);
+
+    CREATE INDEX IF NOT EXISTS idx_q_mentions_companyId
+      ON q_mentions(companyId);
+
+    CREATE INDEX IF NOT EXISTS idx_q_mentions_fetchedAt
+      ON q_mentions(fetchedAt);
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS mention_fetch_cursor (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      lastCompanyIndex INTEGER NOT NULL DEFAULT 0,
+      updatedAt TEXT NOT NULL
+    );
+  `);
+
+  ensureMentionFetchCursorRow(db);
+}
+
+function ensureMentionFetchCursorRow(db: Database.Database): void {
+  const row = db
+    .prepare(`SELECT id FROM mention_fetch_cursor WHERE id = 1`)
+    .get() as { id: number } | undefined;
+
+  if (!row) {
+    db.prepare(
+      `
+        INSERT INTO mention_fetch_cursor (id, lastCompanyIndex, updatedAt)
+        VALUES (1, 0, ?)
+      `,
+    ).run(new Date().toISOString());
+  }
 }
 
 function ensureCompanyColumns(db: Database.Database): void {
