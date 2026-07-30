@@ -64,7 +64,6 @@ Step 3: Configure Environment Variables
 Create a .env file in the root directory:
 
 ```json
-
 PORT=3000
 OLLAMA_BASE_URL=http://localhost:11434
 
@@ -72,7 +71,6 @@ NEWS_API_KEY=
 TAVILY_API_KEY=
 MENTIONS_LIMIT_PER_COMPANY=10
 
-# Shared timezone for fetch-cron / analysis-cron
 CRON_TIMEZONE=Asia/Jerusalem
 
 ```

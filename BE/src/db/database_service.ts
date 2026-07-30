@@ -33,7 +33,7 @@ import {
   type SentimentType,
 } from "./types.js";
 
-const QUARTERLY_WINDOW_DAYS = 90;
+const QUARTERLY_WINDOW_DAYS = 400;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const MS_PER_HOUR = 60 * 60 * 1000;
 const MS_PER_MINUTE = 60 * 1000;
