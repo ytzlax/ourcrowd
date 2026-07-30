@@ -1,13 +1,13 @@
-import { getProviderAttemptOrder } from "../data_layer/fallback_order.js";
+import { getProviderAttemptOrder } from "./fallback_order.js";
 import {
   DataProviderFactory,
   type ProviderFactoryConfig,
-} from "../data_layer/provider_factory.js";
-import { selectProviderType } from "../data_layer/select_provider_type.js";
+} from "./provider_factory.js";
+import { selectProviderType } from "./select_provider_type.js";
 import {
   DataProviderType,
   type Mention,
-} from "../data_layer/base_data_provider.js";
+} from "./base_data_provider.js";
 import type { CompanyMetadata, RouteDecision } from "./router_types.js";
 
 export interface ProviderAttemptError {

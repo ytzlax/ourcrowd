@@ -10,8 +10,8 @@ import type { Company, SaveMentionsResult } from "../db/types.js";
 import {
   RoutedDataFetcher,
   type RoutedFetchResult,
-} from "../llm/routed_data_fetcher.js";
-import type { CompanyMetadata } from "../llm/router_types.js";
+} from "../data_layer/routed_data_fetcher.js";
+import type { CompanyMetadata } from "../data_layer/router_types.js";
 
 export interface ProcessCompanyMentionsResult {
   company: Company;

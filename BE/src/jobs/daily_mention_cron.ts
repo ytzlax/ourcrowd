@@ -4,8 +4,8 @@ import { SentimentAnalyzer, type AnalyzedMention } from "../analysis/index.js";
 import { DatabaseService } from "../db/database_service.js";
 import type { Company } from "../db/types.js";
 import { OllamaRuntime } from "../llm/ollama_runtime.js";
-import type { CompanyMetadata } from "../llm/router_types.js";
-import { RoutedDataFetcher } from "../llm/routed_data_fetcher.js";
+import type { CompanyMetadata } from "../data_layer/router_types.js";
+import { RoutedDataFetcher } from "../data_layer/routed_data_fetcher.js";
 import { processCompanyMentions } from "./process_company_mentions.js";
 
 const DEFAULT_CRON_SCHEDULE = "0 6 * * *";

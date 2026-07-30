@@ -1,7 +1,7 @@
 import type { Mention, RawMention } from "../data_layer/base_data_provider.js";
 import { Llm } from "../llm/llm.js";
 import { DEFAULT_LLM_MODEL } from "../llm/llm_model.js";
-import type { CompanyMetadata } from "../llm/router_types.js";
+import type { CompanyMetadata } from "../data_layer/router_types.js";
 import type { LlmConfig } from "../llm/types.js";
 import {
   BATCH_SENTIMENT_DECISION_SCHEMA,
