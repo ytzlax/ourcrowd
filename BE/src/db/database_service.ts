@@ -24,7 +24,11 @@ import {
   type Mention,
   type MentionInput,
   type QuarterlyMentionsQuery,
+  type QueuedMention,
+  type QueuedMentionInput,
+  QueuedMentionStatus,
   type SaveMentionsResult,
+  type SaveQueuedMentionsResult,
   type SentimentCounts,
   type SentimentType,
 } from "./types.js";
@@ -32,6 +36,7 @@ import {
 const QUARTERLY_WINDOW_DAYS = 90;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const MS_PER_HOUR = 60 * 60 * 1000;
+const MS_PER_MINUTE = 60 * 1000;
 
 interface CompanyRow {
   id: string;
@@ -68,6 +73,36 @@ interface MentionRow {
   analyzedAt: string;
   createdAt: string;
 }
+
+interface QueuedMentionRow {
+  id: string;
+  companyId: string;
+  companyName: string;
+  title: string;
+  url: string;
+  snippet: string | null;
+  publishedAt: string;
+  provider: string;
+  status: QueuedMentionStatus;
+  fetchedAt: string;
+  errorMessage: string | null;
+  retryCount: number;
+}
+
+const QUEUED_MENTION_SELECT_COLUMNS = `
+  id,
+  companyId,
+  companyName,
+  title,
+  url,
+  snippet,
+  publishedAt,
+  provider,
+  status,
+  fetchedAt,
+  errorMessage,
+  retryCount
+`;
 
 export interface DatabaseServiceOptions {
   db?: Database.Database;
@@ -267,6 +302,235 @@ export class DatabaseService {
     }
 
     return { inserted, skipped };
+  }
+
+  public saveQueuedMentions(
+    mentions: QueuedMentionInput[],
+  ): SaveQueuedMentionsResult {
+    if (mentions.length === 0) {
+      return { inserted: 0, skipped: 0 };
+    }
+
+    const now = this.nowIso();
+    const insert = this.db.prepare(`
+      INSERT OR IGNORE INTO q_mentions (
+        id,
+        companyId,
+        companyName,
+        title,
+        url,
+        snippet,
+        publishedAt,
+        provider,
+        status,
+        fetchedAt,
+        errorMessage,
+        retryCount
+      )
+      VALUES (
+        @id,
+        @companyId,
+        @companyName,
+        @title,
+        @url,
+        @snippet,
+        @publishedAt,
+        @provider,
+        @status,
+        @fetchedAt,
+        @errorMessage,
+        @retryCount
+      )
+    `);
+
+    let inserted = 0;
+    let skipped = 0;
+
+    const saveTransaction = this.db.transaction((items: QueuedMentionInput[]) => {
+      for (const mention of items) {
+        const result = insert.run({
+          id: mention.id ?? randomUUID(),
+          companyId: mention.companyId,
+          companyName: mention.companyName,
+          title: mention.title,
+          url: mention.url,
+          snippet: mention.snippet,
+          publishedAt: mention.publishedAt,
+          provider: mention.provider,
+          status: mention.status ?? QueuedMentionStatus.PENDING,
+          fetchedAt: mention.fetchedAt ?? now,
+          errorMessage: mention.errorMessage ?? null,
+          retryCount: mention.retryCount ?? 0,
+        });
+
+        if (result.changes > 0) {
+          inserted += 1;
+          continue;
+        }
+
+        skipped += 1;
+      }
+    });
+
+    saveTransaction(mentions);
+
+    return { inserted, skipped };
+  }
+
+  public getMentionFetchCursorIndex(): number {
+    const row = this.db
+      .prepare(
+        `
+          SELECT lastCompanyIndex
+          FROM mention_fetch_cursor
+          WHERE id = 1
+        `,
+      )
+      .get() as { lastCompanyIndex: number } | undefined;
+
+    return row?.lastCompanyIndex ?? 0;
+  }
+
+  public setMentionFetchCursorIndex(index: number): void {
+    this.db
+      .prepare(
+        `
+          UPDATE mention_fetch_cursor
+          SET
+            lastCompanyIndex = @index,
+            updatedAt = @updatedAt
+          WHERE id = 1
+        `,
+      )
+      .run({
+        index,
+        updatedAt: this.nowIso(),
+      });
+  }
+
+  public countQueuedMentionsByStatus(
+    status: QueuedMentionStatus,
+  ): number {
+    const row = this.db
+      .prepare(
+        `
+          SELECT COUNT(*) AS count
+          FROM q_mentions
+          WHERE status = ?
+        `,
+      )
+      .get(status) as { count: number };
+
+    return row.count;
+  }
+
+  public claimPendingQueuedMentions(limit: number): QueuedMention[] {
+    if (limit <= 0) {
+      return [];
+    }
+
+    const claimTransaction = this.db.transaction((batchLimit: number) => {
+      const rows = this.db
+        .prepare(
+          `
+            SELECT ${QUEUED_MENTION_SELECT_COLUMNS}
+            FROM q_mentions
+            WHERE status = ?
+            ORDER BY fetchedAt ASC
+            LIMIT ?
+          `,
+        )
+        .all(QueuedMentionStatus.PENDING, batchLimit) as QueuedMentionRow[];
+
+      if (rows.length === 0) {
+        return [];
+      }
+
+      const placeholders = rows.map(() => "?").join(", ");
+      this.db
+        .prepare(
+          `
+            UPDATE q_mentions
+            SET status = ?
+            WHERE id IN (${placeholders})
+          `,
+        )
+        .run(QueuedMentionStatus.PROCESSING, ...rows.map((row) => row.id));
+
+      return rows.map((row) =>
+        this.mapQueuedMentionRow({
+          ...row,
+          status: QueuedMentionStatus.PROCESSING,
+        }),
+      );
+    });
+
+    return claimTransaction(limit);
+  }
+
+  public markQueuedMentionsDone(ids: string[]): void {
+    if (ids.length === 0) {
+      return;
+    }
+
+    const placeholders = ids.map(() => "?").join(", ");
+    this.db
+      .prepare(
+        `
+          UPDATE q_mentions
+          SET
+            status = ?,
+            errorMessage = NULL
+          WHERE id IN (${placeholders})
+        `,
+      )
+      .run(QueuedMentionStatus.DONE, ...ids);
+  }
+
+  public markQueuedMentionsFailed(
+    ids: string[],
+    errorMessage: string,
+  ): void {
+    if (ids.length === 0) {
+      return;
+    }
+
+    const placeholders = ids.map(() => "?").join(", ");
+    this.db
+      .prepare(
+        `
+          UPDATE q_mentions
+          SET
+            status = ?,
+            errorMessage = ?,
+            retryCount = retryCount + 1
+          WHERE id IN (${placeholders})
+        `,
+      )
+      .run(QueuedMentionStatus.FAILED, errorMessage, ...ids);
+  }
+
+  public resetStaleProcessingQueuedMentions(staleAfterMinutes: number): number {
+    if (staleAfterMinutes <= 0) {
+      return 0;
+    }
+
+    const threshold = new Date(
+      Date.now() - staleAfterMinutes * MS_PER_MINUTE,
+    ).toISOString();
+
+    const result = this.db
+      .prepare(
+        `
+          UPDATE q_mentions
+          SET status = ?
+          WHERE status = ?
+            AND fetchedAt < ?
+        `,
+      )
+      .run(QueuedMentionStatus.PENDING, QueuedMentionStatus.PROCESSING, threshold);
+
+    return result.changes;
   }
 
   public findMentionByCompanyAndUrl(
@@ -669,6 +933,23 @@ export class DatabaseService {
       summary: row.summary,
       analyzedAt: row.analyzedAt,
       createdAt: row.createdAt,
+    };
+  }
+
+  private mapQueuedMentionRow(row: QueuedMentionRow): QueuedMention {
+    return {
+      id: row.id,
+      companyId: row.companyId,
+      companyName: row.companyName,
+      title: row.title,
+      url: row.url,
+      snippet: row.snippet,
+      publishedAt: row.publishedAt,
+      provider: row.provider,
+      status: row.status,
+      fetchedAt: row.fetchedAt,
+      errorMessage: row.errorMessage,
+      retryCount: row.retryCount,
     };
   }
 

@@ -2,6 +2,7 @@ export { DatabaseService } from "./database_service.js";
 export {
   analyzedMentionToMentionInput,
   dbMentionToAnalyzedMention,
+  queuedMentionToMention,
 } from "./mention_mappers.js";
 export {
   openDatabase,

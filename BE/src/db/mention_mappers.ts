@@ -1,12 +1,13 @@
 import type { AnalyzedMention } from "../analysis/analysis_types.js";
 import {
   DataProviderType,
+  type Mention,
   type RawMention,
 } from "../data_layer/base_data_provider.js";
-import type { Mention, MentionInput } from "./types.js";
+import type { Mention as DbMention, MentionInput, QueuedMention } from "./types.js";
 
 export function dbMentionToAnalyzedMention(
-  mention: Mention,
+  mention: DbMention,
   companyName: string,
   source: DataProviderType = DataProviderType.GOOGLE_RSS,
 ): AnalyzedMention {
@@ -45,4 +46,24 @@ export function analyzedMentionToMentionInput(
     summary: analyzed.summary,
     analyzedAt: new Date().toISOString(),
   };
+}
+
+export function queuedMentionToMention(queued: QueuedMention): Mention {
+  return {
+    title: queued.title,
+    url: queued.url,
+    snippet: queued.snippet ?? "",
+    publishedAt: new Date(queued.publishedAt),
+    source: parseProviderType(queued.provider),
+  };
+}
+
+function parseProviderType(provider: string): DataProviderType {
+  if (
+    Object.values(DataProviderType).includes(provider as DataProviderType)
+  ) {
+    return provider as DataProviderType;
+  }
+
+  return DataProviderType.GOOGLE_RSS;
 }
