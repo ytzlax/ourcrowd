@@ -194,6 +194,7 @@ export class SentimentAnalyzer {
     const metadataLines = [
       `Company name: ${company.name}`,
       company.sector ? `Sector/Domain: ${company.sector}` : null,
+      company.context ? `Context: ${company.context}` : null,
     ].filter((line): line is string => line !== null);
 
     return ["Company metadata:", ...metadataLines.map((line) => `- ${line}`)];

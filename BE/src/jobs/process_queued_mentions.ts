@@ -1,6 +1,10 @@
+import path from "node:path";
+
 import { SentimentAnalyzer } from "../analysis/index.js";
 import type { Mention } from "../data_layer/base_data_provider.js";
 import type { CompanyMetadata } from "../data_layer/router_types.js";
+import { readExistingEnrichment } from "../data_processing/helper.js";
+import { resolveProjectDataDir } from "../db/connection.js";
 import { DatabaseService } from "../db/database_service.js";
 import {
   analyzedMentionToMentionInput,
@@ -10,6 +14,27 @@ import type { QueuedMention, SaveMentionsResult } from "../db/types.js";
 
 const DEFAULT_BATCH_SIZE = 10;
 const DEFAULT_STALE_PROCESSING_MINUTES = 30;
+const ENRICHMENT_FILE = path.join(
+  resolveProjectDataDir(),
+  "companies_enrichment.json",
+);
+
+let enrichmentByName: Map<string, string> | null = null;
+
+function getCompanyEnrichmentContext(companyName: string): string | undefined {
+  if (!enrichmentByName) {
+    enrichmentByName = new Map();
+    for (const item of readExistingEnrichment(ENRICHMENT_FILE)) {
+      const data = item.data?.trim();
+      if (!data) {
+        continue;
+      }
+      enrichmentByName.set(item.name.trim().toLowerCase(), data);
+    }
+  }
+
+  return enrichmentByName.get(companyName.trim().toLowerCase());
+}
 
 export interface ProcessQueuedMentionsResult {
   claimed: number;
@@ -108,6 +133,7 @@ async function processQueuedMentionGroup(
 
   const companyMetadata: CompanyMetadata = {
     name: company.name,
+    context: getCompanyEnrichmentContext(company.name),
     companyType: company.companyType,
     mediaPresence: company.mediaPresence,
   };
