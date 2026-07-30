@@ -7,12 +7,27 @@ export enum MentionStatus {
   NO_COVERAGE_FOUND = "NO_COVERAGE_FOUND",
 }
 
+export enum CompanyType {
+  B2B = "B2B",
+  B2C = "B2C",
+  ENTERPRISE = "Enterprise",
+  OPEN_SOURCE = "OpenSource",
+}
+
+export enum MediaPresence {
+  HIGH_MAINSTREAM = "high_mainstream",
+  NICHE_TECH = "niche_tech",
+  LOW_PR = "low_pr",
+}
+
 export type IsoDateTimeString = string;
 
 export interface Company {
   id: string;
   name: string;
   domain: string;
+  companyType: CompanyType;
+  mediaPresence: MediaPresence;
   lastMentionedAt: IsoDateTimeString | null;
   status: MentionStatus;
   createdAt: IsoDateTimeString;
@@ -37,6 +52,8 @@ export interface CompanyInput {
   id?: string;
   name: string;
   domain: string;
+  companyType?: CompanyType;
+  mediaPresence?: MediaPresence;
   lastMentionedAt?: IsoDateTimeString | null;
   status?: MentionStatus;
 }

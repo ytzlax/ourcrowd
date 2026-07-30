@@ -10,7 +10,9 @@
     "pipeline": "tsx src/scripts/pipeline_placeholder.ts",
     "alert": "tsx src/scripts/pipeline_placeholder.ts",
     "cron": "tsx src/jobs/start_daily_cron.ts",
-    "cron:now": "tsx src/jobs/run_daily_mention_now.ts"
+    "cron:now": "tsx src/jobs/run_daily_mention_now.ts",
+    "load-companies": "tsx src/data_processing/run_load_companies.ts",
+    "enrich-companies": "tsx src/data_processing/run_enrich_companies.ts"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.2",

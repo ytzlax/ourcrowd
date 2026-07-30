@@ -1,6 +1,6 @@
 import type { Mention, RawMention } from "../data_layer/base_data_provider.js";
 import { Llm } from "../llm/llm.js";
-import { LlmModel } from "../llm/llm_model.js";
+import { DEFAULT_LLM_MODEL } from "../llm/llm_model.js";
 import type { CompanyMetadata } from "../llm/router_types.js";
 import type { LlmConfig } from "../llm/types.js";
 import {
@@ -29,7 +29,7 @@ export class SentimentAnalyzer {
   public constructor(config: SentimentAnalyzerConfig = {}) {
     this.llm = new Llm({
       ...config.llm,
-      model: LlmModel.QWEN_2_5_0_5B,
+      model: DEFAULT_LLM_MODEL,
       system: config.llm?.system ?? SENTIMENT_SYSTEM_PROMPT,
       options: { temperature: 0.1, ...config.llm?.options },
     });
@@ -69,17 +69,51 @@ export class SentimentAnalyzer {
       BATCH_SENTIMENT_DECISION_SCHEMA,
     );
 
-    return mentions.map((mention, idx) => {
-      const raw = rawItems.find((item) => item.index === idx);
+    const results: AnalyzedMention[] = [];
 
-      if (!raw) {
-        throw new Error(
-          `[SentimentAnalyzer] LLM batch response missing index ${idx} for "${mention.title}"`,
-        );
+    for (let idx = 0; idx < mentions.length; idx++) {
+      const mention = mentions[idx];
+      const raw = this.resolveBatchItem(rawItems, idx);
+
+      if (raw) {
+        results.push(this.normalizeResult(company.name, mention, raw));
+        continue;
       }
 
-      return this.normalizeResult(company.name, mention, raw);
-    });
+      console.warn(
+        `[SentimentAnalyzer] Batch missing index ${idx} for "${mention.title}"; falling back to single analysis`,
+      );
+      results.push(await this.analyzeMention(company, mention));
+    }
+
+    return results;
+  }
+
+  private resolveBatchItem(
+    rawItems: RawBatchSentimentItem[],
+    idx: number,
+  ): RawBatchSentimentItem | undefined {
+    const byIndex = rawItems.find((item) => Number(item.index) === idx);
+    if (byIndex) {
+      return byIndex;
+    }
+
+    const positional = rawItems[idx];
+    if (positional && this.isUsableSentimentDecision(positional)) {
+      return positional;
+    }
+
+    return undefined;
+  }
+
+  private isUsableSentimentDecision(
+    item: RawBatchSentimentItem,
+  ): item is RawBatchSentimentItem {
+    return (
+      typeof item.is_relevant === "boolean" &&
+      typeof item.sentiment === "string" &&
+      typeof item.summary === "string"
+    );
   }
 
   private buildAnalysisPrompt(

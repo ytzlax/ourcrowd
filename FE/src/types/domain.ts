@@ -17,12 +17,32 @@ export const MentionStatus = {
 export type MentionStatus =
   (typeof MentionStatus)[keyof typeof MentionStatus];
 
+export const CompanyType = {
+  B2B: "B2B",
+  B2C: "B2C",
+  ENTERPRISE: "Enterprise",
+  OPEN_SOURCE: "OpenSource",
+} as const;
+
+export type CompanyType = (typeof CompanyType)[keyof typeof CompanyType];
+
+export const MediaPresence = {
+  HIGH_MAINSTREAM: "high_mainstream",
+  NICHE_TECH: "niche_tech",
+  LOW_PR: "low_pr",
+} as const;
+
+export type MediaPresence =
+  (typeof MediaPresence)[keyof typeof MediaPresence];
+
 export type IsoDateTimeString = string;
 
 export interface Company {
   id: string;
   name: string;
   domain: string;
+  companyType: CompanyType;
+  mediaPresence: MediaPresence;
   lastMentionedAt: IsoDateTimeString | null;
   status: MentionStatus;
   createdAt: IsoDateTimeString;

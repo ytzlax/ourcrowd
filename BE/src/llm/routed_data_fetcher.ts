@@ -3,12 +3,11 @@ import {
   DataProviderFactory,
   type ProviderFactoryConfig,
 } from "../data_layer/provider_factory.js";
+import { selectProviderType } from "../data_layer/select_provider_type.js";
 import {
   DataProviderType,
   type Mention,
 } from "../data_layer/base_data_provider.js";
-import { LlmRouter } from "./llm_router.js";
-import type { LlmConfig } from "./types.js";
 import type { CompanyMetadata, RouteDecision } from "./router_types.js";
 
 export interface ProviderAttemptError {
@@ -26,21 +25,18 @@ export interface RoutedFetchResult {
 }
 
 export interface RoutedDataFetcherConfig {
-  llm?: LlmConfig;
   providers?: ProviderFactoryConfig;
 }
 
 export class RoutedDataFetcher {
-  private readonly router: LlmRouter;
   private readonly providerFactory: DataProviderFactory;
 
   public constructor(config: RoutedDataFetcherConfig = {}) {
-    this.router = new LlmRouter(config.llm);
     this.providerFactory = new DataProviderFactory(config.providers);
   }
 
   public async fetchForCompany(company: CompanyMetadata): Promise<RoutedFetchResult> {
-    const routeDecision = await this.router.route(company);
+    const routeDecision = this.buildRouteDecision(company);
     const attemptOrder = getProviderAttemptOrder(routeDecision.provider);
 
     const attemptedProviders: DataProviderType[] = [];
@@ -77,6 +73,14 @@ export class RoutedDataFetcher {
     throw new Error(
       `[RoutedDataFetcher] All providers failed for "${company.name}": ${this.summarizeErrors(errors, skippedProviders)}`,
     );
+  }
+
+  private buildRouteDecision(company: CompanyMetadata): RouteDecision {
+    return {
+      provider: selectProviderType(company),
+      query: company.name,
+      isAmbiguous: false,
+    };
   }
 
   private formatError(error: unknown): string {

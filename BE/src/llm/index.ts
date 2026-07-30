@@ -1,6 +1,5 @@
 export { Llm } from "./llm.js";
 export { OllamaRuntime } from "./ollama_runtime.js";
-export { LlmRouter } from "./llm_router.js";
 export { RoutedDataFetcher } from "./routed_data_fetcher.js";
 export { DEFAULT_LLM_MODEL, LlmModel } from "./llm_model.js";
 export type { OllamaRuntimeConfig } from "./ollama_runtime.js";

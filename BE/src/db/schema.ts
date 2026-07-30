@@ -1,6 +1,11 @@
 import type Database from "better-sqlite3";
 
-import { MentionStatus, SentimentType } from "./types.js";
+import {
+  CompanyType,
+  MediaPresence,
+  MentionStatus,
+  SentimentType,
+} from "./types.js";
 
 function quoteSqlString(value: string): string {
   return `'${value.replaceAll("'", "''")}'`;
@@ -14,12 +19,29 @@ const MENTION_STATUS_VALUES = Object.values(MentionStatus)
   .map((value) => quoteSqlString(value))
   .join(", ");
 
+const COMPANY_TYPE_VALUES = Object.values(CompanyType)
+  .map((value) => quoteSqlString(value))
+  .join(", ");
+
+const MEDIA_PRESENCE_VALUES = Object.values(MediaPresence)
+  .map((value) => quoteSqlString(value))
+  .join(", ");
+
+const DEFAULT_COMPANY_TYPE = CompanyType.B2B;
+const DEFAULT_MEDIA_PRESENCE = MediaPresence.NICHE_TECH;
+
 export function ensureSchema(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS companies (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       domain TEXT NOT NULL UNIQUE,
+      companyType TEXT NOT NULL
+        DEFAULT ${quoteSqlString(DEFAULT_COMPANY_TYPE)}
+        CHECK (companyType IN (${COMPANY_TYPE_VALUES})),
+      mediaPresence TEXT NOT NULL
+        DEFAULT ${quoteSqlString(DEFAULT_MEDIA_PRESENCE)}
+        CHECK (mediaPresence IN (${MEDIA_PRESENCE_VALUES})),
       lastMentionedAt TEXT NULL,
       status TEXT NOT NULL
         CHECK (status IN (${MENTION_STATUS_VALUES})),
@@ -27,6 +49,8 @@ export function ensureSchema(db: Database.Database): void {
       updatedAt TEXT NOT NULL
     );
   `);
+
+  ensureCompanyColumns(db);
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS mentions (
@@ -58,4 +82,27 @@ export function ensureSchema(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_mentions_createdAt
       ON mentions(createdAt);
   `);
+}
+
+function ensureCompanyColumns(db: Database.Database): void {
+  const columns = db
+    .prepare(`PRAGMA table_info(companies)`)
+    .all() as Array<{ name: string }>;
+  const columnNames = new Set(columns.map((column) => column.name));
+
+  if (!columnNames.has("companyType")) {
+    db.exec(`
+      ALTER TABLE companies
+      ADD COLUMN companyType TEXT NOT NULL
+        DEFAULT ${quoteSqlString(DEFAULT_COMPANY_TYPE)}
+    `);
+  }
+
+  if (!columnNames.has("mediaPresence")) {
+    db.exec(`
+      ALTER TABLE companies
+      ADD COLUMN mediaPresence TEXT NOT NULL
+        DEFAULT ${quoteSqlString(DEFAULT_MEDIA_PRESENCE)}
+    `);
+  }
 }
