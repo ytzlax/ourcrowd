@@ -76,7 +76,10 @@ export class SentimentAnalyzer {
       const raw = this.resolveBatchItem(rawItems, idx);
 
       if (raw) {
-        results.push(this.normalizeResult(company.name, mention, raw));
+        const result = this.normalizeResult(company.name, mention, raw);
+        if (result.isRelevant) {
+          results.push(result);
+        }
         continue;
       }
 
@@ -123,7 +126,7 @@ export class SentimentAnalyzer {
   ): string {
     const metadataLines = [
       `Company name: ${company.name}`,
-      company.sector ? `Sector: ${company.sector}` : null,
+      company.sector ? `Sector/Domain: ${company.sector}` : null,
     ].filter((line): line is string => line !== null);
 
     const publishedLine = mention.publishedAt
@@ -149,18 +152,25 @@ export class SentimentAnalyzer {
       ...articleLines,
       "",
       "Tasks:",
-      "1. Determine if the article is actually about this specific company (not a homonym or unrelated topic).",
+      "1. Determine if the article is genuinely about this specific tech company/startup.",
       "2. If relevant, classify sentiment as positive, negative, or neutral for the company's business outlook.",
-      "3. Provide a one-sentence summary of the mention's key takeaway.",
+      "3. Provide a one-sentence summary of the mention's key takeaway (or 'N/A' if not relevant).",
+      "",
+      "Relevance guidelines (is_relevant):",
+      "- Set is_relevant = true IF: The article directly discusses, news-reports on, or features this specific company or its products/executives.",
+      "- Set is_relevant = false IF:",
+      "  * The name appears only as a general noun, phrase, or technical term (e.g., '3D signals', 'island', 'wave') rather than the company as a proper noun.",
+      "  * The article is about an entirely different company/person with a similar or identical name.",
+      "  * The company name is merely listed in a footer, tag cloud, or automated disclaimer without actual reporting on the company.",
       "",
       "Sentiment guidelines:",
-      "- positive: funding, partnerships, product wins, growth, awards",
-      "- negative: layoffs, lawsuits, failures, regulatory trouble, data breaches",
-      "- neutral: factual reporting without clear positive/negative business impact",
+      "- positive: funding, acquisitions, strategic partnerships, product launches, revenue growth, industry awards",
+      "- negative: layoffs, lawsuits, security breaches, regulatory sanctions, product failures, financial loss",
+      "- neutral: routine corporate announcements, balanced reporting, or general industry roundups",
       "",
       "Return JSON with:",
       "- is_relevant: boolean",
-      "- sentiment: one of positive, negative, neutral (use neutral if not relevant)",
+      "- sentiment: 'positive' | 'negative' | 'neutral' (use 'neutral' if is_relevant is false)",
       "- summary: brief takeaway",
     ].join("\n");
   }
