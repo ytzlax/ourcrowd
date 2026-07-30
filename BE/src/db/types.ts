@@ -41,7 +41,6 @@ export interface Mention {
   snippet: string | null;
   publishedAt: IsoDateTimeString;
   sentiment: SentimentType;
-  isRelevant: boolean;
   summary: string;
   analyzedAt: IsoDateTimeString;
   createdAt: IsoDateTimeString;
@@ -64,7 +63,6 @@ export interface MentionInput {
   snippet: string | null;
   publishedAt: IsoDateTimeString;
   sentiment: SentimentType;
-  isRelevant: boolean;
   summary: string;
   analyzedAt?: IsoDateTimeString;
   createdAt?: IsoDateTimeString;

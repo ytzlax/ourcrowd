@@ -68,7 +68,6 @@ interface MentionRow {
   snippet: string | null;
   publishedAt: string;
   sentiment: SentimentType;
-  isRelevant: number;
   summary: string;
   analyzedAt: string;
   createdAt: string;
@@ -245,7 +244,6 @@ export class DatabaseService {
         snippet,
         publishedAt,
         sentiment,
-        isRelevant,
         summary,
         analyzedAt,
         createdAt
@@ -258,7 +256,6 @@ export class DatabaseService {
         @snippet,
         @publishedAt,
         @sentiment,
-        @isRelevant,
         @summary,
         @analyzedAt,
         @createdAt
@@ -279,7 +276,6 @@ export class DatabaseService {
           snippet: mention.snippet,
           publishedAt: mention.publishedAt,
           sentiment: mention.sentiment,
-          isRelevant: mention.isRelevant ? 1 : 0,
           summary: mention.summary,
           analyzedAt: mention.analyzedAt ?? now,
           createdAt: mention.createdAt ?? now,
@@ -548,7 +544,6 @@ export class DatabaseService {
             snippet,
             publishedAt,
             sentiment,
-            isRelevant,
             summary,
             analyzedAt,
             createdAt
@@ -582,7 +577,6 @@ export class DatabaseService {
             snippet,
             publishedAt,
             sentiment,
-            isRelevant,
             summary,
             analyzedAt,
             createdAt
@@ -648,7 +642,6 @@ export class DatabaseService {
             snippet,
             publishedAt,
             sentiment,
-            isRelevant,
             summary,
             analyzedAt,
             createdAt
@@ -670,7 +663,6 @@ export class DatabaseService {
           SELECT MAX(publishedAt) AS lastMentionedAt
           FROM mentions
           WHERE companyId = ?
-            AND isRelevant = 1
         `,
       )
       .get(companyId) as { lastMentionedAt: string | null } | undefined;
@@ -713,7 +705,6 @@ export class DatabaseService {
             snippet,
             publishedAt,
             sentiment,
-            isRelevant,
             summary,
             analyzedAt,
             createdAt
@@ -921,7 +912,6 @@ export class DatabaseService {
             snippet,
             publishedAt,
             sentiment,
-            isRelevant,
             summary,
             analyzedAt,
             createdAt
@@ -956,7 +946,6 @@ export class DatabaseService {
       snippet: row.snippet,
       publishedAt: row.publishedAt,
       sentiment: row.sentiment,
-      isRelevant: row.isRelevant === 1,
       summary: row.summary,
       analyzedAt: row.analyzedAt,
       createdAt: row.createdAt,

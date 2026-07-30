@@ -62,7 +62,7 @@ export async function processCompanyMentions(
       : [];
 
   const saveableMentions = newlyAnalyzed.filter(
-    (entry) => entry.mention.url.trim().length > 0,
+    (entry) => entry.isRelevant && entry.mention.url.trim().length > 0,
   );
   const saved = options.db.saveMentions(
     saveableMentions.map((entry) =>

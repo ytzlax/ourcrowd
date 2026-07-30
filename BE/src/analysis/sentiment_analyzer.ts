@@ -1,6 +1,6 @@
 import type { Mention, RawMention } from "../data_layer/base_data_provider.js";
 import { Llm } from "../llm/llm.js";
-import { DEFAULT_LLM_MODEL } from "../llm/llm_model.js";
+import { LlmModel, DEFAULT_LLM_MODEL } from "../llm/llm_model.js";
 import type { CompanyMetadata } from "../data_layer/router_types.js";
 import type { LlmConfig } from "../llm/types.js";
 import {
@@ -29,7 +29,7 @@ export class SentimentAnalyzer {
   public constructor(config: SentimentAnalyzerConfig = {}) {
     this.llm = new Llm({
       ...config.llm,
-      model: DEFAULT_LLM_MODEL,
+      model: LlmModel.LLAMA_3_2_3B,
       system: config.llm?.system ?? SENTIMENT_SYSTEM_PROMPT,
       options: { temperature: 0.1, ...config.llm?.options },
     });
@@ -54,7 +54,8 @@ export class SentimentAnalyzer {
     }
 
     if (mentions.length === 1) {
-      return [await this.analyzeMention(company, mentions[0])];
+      const result = await this.analyzeMention(company, mentions[0]);
+      return result.isRelevant ? [result] : [];
     }
 
     return this.analyzeMentionsBatch(company, mentions);
@@ -86,7 +87,10 @@ export class SentimentAnalyzer {
       console.warn(
         `[SentimentAnalyzer] Batch missing index ${idx} for "${mention.title}"; falling back to single analysis`,
       );
-      results.push(await this.analyzeMention(company, mention));
+      const fallback = await this.analyzeMention(company, mention);
+      if (fallback.isRelevant) {
+        results.push(fallback);
+      }
     }
 
     return results;
@@ -124,11 +128,6 @@ export class SentimentAnalyzer {
     mention: Mention,
     normalized: ReturnType<typeof normalizeMentionForAnalysis>,
   ): string {
-    const metadataLines = [
-      `Company name: ${company.name}`,
-      company.sector ? `Sector/Domain: ${company.sector}` : null,
-    ].filter((line): line is string => line !== null);
-
     const publishedLine = mention.publishedAt
       ? `Published: ${mention.publishedAt.toISOString()}`
       : null;
@@ -145,13 +144,66 @@ export class SentimentAnalyzer {
     return [
       "Analyze the following news mention for the portfolio company.",
       "",
-      "Company metadata:",
-      ...metadataLines.map((line) => `- ${line}`),
+      ...this.formatCompanyMetadata(company),
       "",
       "Article:",
       ...articleLines,
       "",
-      "Tasks:",
+      ...this.analysisGuidelines("single"),
+      "",
+      "Return JSON with:",
+      "- is_relevant: boolean",
+      "- sentiment: 'positive' | 'negative' | 'neutral' (use 'neutral' if is_relevant is false)",
+      "- summary: brief takeaway",
+    ].join("\n");
+  }
+
+  private buildBatchAnalysisPrompt(
+    company: CompanyMetadata,
+    mentions: Mention[],
+  ): string {
+    const mentionBlocks = mentions.map((mention, idx) => {
+      const normalized = normalizeMentionForAnalysis(mention);
+
+      return [
+        `[${idx}]`,
+        `  Title: ${normalized.title}`,
+        `  Content: ${normalized.combinedText}`,
+      ].join("\n");
+    });
+
+    return [
+      `Analyze the following ${mentions.length} news mentions for the portfolio company.`,
+      "",
+      ...this.formatCompanyMetadata(company),
+      "",
+      "Mentions:",
+      ...mentionBlocks,
+      "",
+      ...this.analysisGuidelines("batch"),
+      "",
+      "Return a JSON array with one object per mention, each containing:",
+      "- index: the mention index number from the list above",
+      "- is_relevant: boolean",
+      "- sentiment: one of positive, negative, neutral (use neutral if not relevant)",
+      "- summary: brief takeaway",
+    ].join("\n");
+  }
+
+  private formatCompanyMetadata(company: CompanyMetadata): string[] {
+    const metadataLines = [
+      `Company name: ${company.name}`,
+      company.sector ? `Sector/Domain: ${company.sector}` : null,
+    ].filter((line): line is string => line !== null);
+
+    return ["Company metadata:", ...metadataLines.map((line) => `- ${line}`)];
+  }
+
+  private analysisGuidelines(mode: "single" | "batch"): string[] {
+    const tasksHeading = mode === "batch" ? "Tasks (for each mention):" : "Tasks:";
+
+    return [
+      tasksHeading,
       "1. Determine if the article is genuinely about this specific tech company/startup.",
       "2. If relevant, classify sentiment as positive, negative, or neutral for the company's business outlook.",
       "3. Provide a one-sentence summary of the mention's key takeaway (or 'N/A' if not relevant).",
@@ -167,58 +219,7 @@ export class SentimentAnalyzer {
       "- positive: funding, acquisitions, strategic partnerships, product launches, revenue growth, industry awards",
       "- negative: layoffs, lawsuits, security breaches, regulatory sanctions, product failures, financial loss",
       "- neutral: routine corporate announcements, balanced reporting, or general industry roundups",
-      "",
-      "Return JSON with:",
-      "- is_relevant: boolean",
-      "- sentiment: 'positive' | 'negative' | 'neutral' (use 'neutral' if is_relevant is false)",
-      "- summary: brief takeaway",
-    ].join("\n");
-  }
-
-  private buildBatchAnalysisPrompt(
-    company: CompanyMetadata,
-    mentions: Mention[],
-  ): string {
-    const metadataLines = [
-      `Company name: ${company.name}`,
-      company.sector ? `Sector: ${company.sector}` : null,
-    ].filter((line): line is string => line !== null);
-
-    const mentionBlocks = mentions.map((mention, idx) => {
-      const normalized = normalizeMentionForAnalysis(mention);
-
-      return [
-        `[${idx}]`,
-        `  Title: ${normalized.title}`,
-        `  Content: ${normalized.combinedText}`,
-      ].join("\n");
-    });
-
-    return [
-      `Analyze the following ${mentions.length} news mentions for the portfolio company.`,
-      "",
-      "Company metadata:",
-      ...metadataLines.map((line) => `- ${line}`),
-      "",
-      "Mentions:",
-      ...mentionBlocks,
-      "",
-      "Tasks (for each mention):",
-      "1. Determine if the article is actually about this specific company (not a homonym or unrelated topic).",
-      "2. If relevant, classify sentiment as positive, negative, or neutral for the company's business outlook.",
-      "3. Provide a one-sentence summary of the mention's key takeaway.",
-      "",
-      "Sentiment guidelines:",
-      "- positive: funding, partnerships, product wins, growth, awards",
-      "- negative: layoffs, lawsuits, failures, regulatory trouble, data breaches",
-      "- neutral: factual reporting without clear positive/negative business impact",
-      "",
-      "Return a JSON array with one object per mention, each containing:",
-      "- index: the mention index number from the list above",
-      "- is_relevant: boolean",
-      "- sentiment: one of positive, negative, neutral (use neutral if not relevant)",
-      "- summary: brief takeaway",
-    ].join("\n");
+    ];
   }
 
   private normalizeResult(

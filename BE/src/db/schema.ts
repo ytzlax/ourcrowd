@@ -66,8 +66,6 @@ export function ensureSchema(db: Database.Database): void {
       publishedAt TEXT NOT NULL,
       sentiment TEXT NOT NULL
         CHECK (sentiment IN (${SENTIMENT_VALUES})),
-      isRelevant INTEGER NOT NULL
-        CHECK (isRelevant IN (0, 1)),
       summary TEXT NOT NULL,
       analyzedAt TEXT NOT NULL,
       createdAt TEXT NOT NULL,
