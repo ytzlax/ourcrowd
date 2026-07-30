@@ -5,7 +5,7 @@ import { CompanyEnrichmentRecord, RawCompanyClassification, TavilyEnrichResponse
 import { CompanyType, MediaPresence } from "../db/types.js";
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 
-const COMPANIES_FILE = path.resolve(MODULE_DIR, "../../ourcrowd_companies_small.txt");
+const COMPANIES_FILE = path.resolve(MODULE_DIR, "../../ourcrowd_companies.txt");
 
 export function parseCompaniesFile(content: string): string[] {
     return content

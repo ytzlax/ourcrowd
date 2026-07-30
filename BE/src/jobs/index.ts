@@ -1,5 +1,5 @@
 export { fetchCompanyMentions } from "./fetch_company_mentions.js";
-export { loadCompanies } from "../data_processing/enrich_pipeline.js";
+export { loadCompanies } from "../data_processing/data_pipeline.js";
 export {
   parseCompaniesFile,
   readCompaniesFromFile,

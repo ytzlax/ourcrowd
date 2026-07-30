@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-import { enrichCompaniesData } from "./enrich_pipeline.js";
+import { enrichCompaniesData } from "./data_pipeline.js";
 
 const filePath = process.argv[2];
 const outputPath = process.argv[3];

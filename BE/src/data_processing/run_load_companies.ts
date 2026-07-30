@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-import { loadCompanies } from "./enrich_pipeline.js";
+import { loadCompanies } from "./data_pipeline.js";
 
 try {
   console.time("loadCompanies");
