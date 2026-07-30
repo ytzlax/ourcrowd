@@ -10,15 +10,8 @@ export {
   parseCompaniesFile,
   readCompaniesFromFile,
 } from "../data_processing/helper.js";
-export { processCompanyMentions } from "./process_company_mentions.js";
-export type { ProcessCompanyMentionsResult } from "./process_company_mentions.js";
 export { processQueuedMentions } from "./process_queued_mentions.js";
 export type { ProcessQueuedMentionsResult } from "./process_queued_mentions.js";
-export {
-  DailyMentionCronJob,
-  createDailyMentionCronFromEnv,
-} from "./daily_mention_cron.js";
-export type { DailyMentionCronConfig } from "./daily_mention_cron.js";
 export {
   MentionFetchManager,
   createMentionFetchManagerFromEnv,

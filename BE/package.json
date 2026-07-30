@@ -9,8 +9,6 @@
     "start": "node dist/index.js",
     "pipeline": "tsx src/scripts/pipeline_placeholder.ts",
     "alert": "tsx src/scripts/pipeline_placeholder.ts",
-    "cron": "tsx src/jobs/start_daily_cron.ts",
-    "cron:now": "tsx src/jobs/run_daily_mention_now.ts",
     "fetch-cron": "tsx src/jobs/start_mention_fetch_cron.ts",
     "fetch-cron:now": "tsx src/jobs/run_mention_fetch_now.ts",
     "analysis-cron": "tsx src/jobs/start_mention_analysis_cron.ts",
