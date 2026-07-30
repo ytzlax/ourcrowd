@@ -144,7 +144,6 @@ export function createDailyMentionCronFromEnv(
 function toCompanyMetadata(company: Company): CompanyMetadata {
   return {
     name: company.name,
-    domain: company.domain,
     companyType: company.companyType,
     mediaPresence: company.mediaPresence,
   };

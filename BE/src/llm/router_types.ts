@@ -3,7 +3,6 @@ import { CompanyType, MediaPresence } from "../db/types.js";
 
 export interface CompanyMetadata {
   name: string;
-  domain?: string;
   sector?: string;
   companyType: CompanyType;
   mediaPresence: MediaPresence;

@@ -122,9 +122,6 @@ export function CompanyTable({
                     <td className="px-4 py-3">
                       <SentimentMiniBar counts={company.sentimentCounts} />
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {company.domain}
-                    </td>
                   </tr>
                 );
               })}

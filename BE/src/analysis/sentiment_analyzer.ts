@@ -123,7 +123,6 @@ export class SentimentAnalyzer {
   ): string {
     const metadataLines = [
       `Company name: ${company.name}`,
-      company.domain ? `Domain: ${company.domain}` : null,
       company.sector ? `Sector: ${company.sector}` : null,
     ].filter((line): line is string => line !== null);
 
@@ -172,7 +171,6 @@ export class SentimentAnalyzer {
   ): string {
     const metadataLines = [
       `Company name: ${company.name}`,
-      company.domain ? `Domain: ${company.domain}` : null,
       company.sector ? `Sector: ${company.sector}` : null,
     ].filter((line): line is string => line !== null);
 

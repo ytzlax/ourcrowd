@@ -36,7 +36,6 @@ const MS_PER_HOUR = 60 * 60 * 1000;
 interface CompanyRow {
   id: string;
   name: string;
-  domain: string;
   companyType: CompanyType;
   mediaPresence: MediaPresence;
   lastMentionedAt: string | null;
@@ -48,7 +47,6 @@ interface CompanyRow {
 const COMPANY_SELECT_COLUMNS = `
   id,
   name,
-  domain,
   companyType,
   mediaPresence,
   lastMentionedAt,
@@ -111,7 +109,6 @@ export class DatabaseService {
 
   public ensureCompany(input: {
     name: string;
-    domain?: string;
     companyType?: CompanyType;
     mediaPresence?: MediaPresence;
   }): Company {
@@ -125,7 +122,6 @@ export class DatabaseService {
         {
           id: existing.id,
           name: existing.name,
-          domain: existing.domain,
           companyType: input.companyType ?? existing.companyType,
           mediaPresence: input.mediaPresence ?? existing.mediaPresence,
           lastMentionedAt: existing.lastMentionedAt,
@@ -134,11 +130,9 @@ export class DatabaseService {
       ])[0];
     }
 
-    const domain = input.domain ?? this.domainPlaceholderFromName(input.name);
     return this.seedCompanies([
       {
         name: input.name,
-        domain,
         companyType: input.companyType,
         mediaPresence: input.mediaPresence,
       },
@@ -151,7 +145,6 @@ export class DatabaseService {
       INSERT INTO companies (
         id,
         name,
-        domain,
         companyType,
         mediaPresence,
         lastMentionedAt,
@@ -162,7 +155,6 @@ export class DatabaseService {
       VALUES (
         @id,
         @name,
-        @domain,
         @companyType,
         @mediaPresence,
         @lastMentionedAt,
@@ -172,7 +164,6 @@ export class DatabaseService {
       )
       ON CONFLICT(id) DO UPDATE SET
         name = excluded.name,
-        domain = excluded.domain,
         companyType = excluded.companyType,
         mediaPresence = excluded.mediaPresence,
         updatedAt = excluded.updatedAt
@@ -187,7 +178,6 @@ export class DatabaseService {
         const row: CompanyRow = {
           id,
           name: company.name,
-          domain: company.domain,
           companyType: company.companyType ?? CompanyType.B2B,
           mediaPresence: company.mediaPresence ?? MediaPresence.NICHE_TECH,
           lastMentionedAt: company.lastMentionedAt ?? null,
@@ -492,9 +482,7 @@ export class DatabaseService {
       }
 
       return (
-        company.name.toLowerCase().includes(search) ||
-        company.domain.toLowerCase().includes(search)
-      );
+        company.name.toLowerCase().includes(search));
     });
   }
 
@@ -659,7 +647,6 @@ export class DatabaseService {
     return {
       id: row.id,
       name: row.name,
-      domain: row.domain,
       companyType: row.companyType,
       mediaPresence: row.mediaPresence,
       lastMentionedAt: row.lastMentionedAt,
@@ -700,14 +687,5 @@ export class DatabaseService {
   private daysBetween(earlier: Date, later: Date): number {
     const diffMs = later.getTime() - earlier.getTime();
     return Math.max(0, Math.floor(diffMs / MS_PER_DAY));
-  }
-
-  private domainPlaceholderFromName(name: string): string {
-    const slug = name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-
-    return `${slug || "company"}.local`;
   }
 }

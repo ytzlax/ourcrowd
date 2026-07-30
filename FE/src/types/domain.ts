@@ -40,7 +40,6 @@ export type IsoDateTimeString = string;
 export interface Company {
   id: string;
   name: string;
-  domain: string;
   companyType: CompanyType;
   mediaPresence: MediaPresence;
   lastMentionedAt: IsoDateTimeString | null;

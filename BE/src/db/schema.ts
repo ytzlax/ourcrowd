@@ -35,7 +35,6 @@ export function ensureSchema(db: Database.Database): void {
     CREATE TABLE IF NOT EXISTS companies (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
-      domain TEXT NOT NULL UNIQUE,
       companyType TEXT NOT NULL
         DEFAULT ${quoteSqlString(DEFAULT_COMPANY_TYPE)}
         CHECK (companyType IN (${COMPANY_TYPE_VALUES})),

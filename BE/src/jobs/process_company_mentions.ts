@@ -35,7 +35,6 @@ export async function processCompanyMentions(
   const fetchResult = await options.fetcher.fetchForCompany(company);
   const dbCompany = options.db.ensureCompany({
     name: company.name,
-    domain: company.domain,
   });
 
   const { mentionsWithUrl, mentionsWithoutUrl } = partitionMentionsByUrl(

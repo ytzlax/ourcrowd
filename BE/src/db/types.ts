@@ -25,7 +25,6 @@ export type IsoDateTimeString = string;
 export interface Company {
   id: string;
   name: string;
-  domain: string;
   companyType: CompanyType;
   mediaPresence: MediaPresence;
   lastMentionedAt: IsoDateTimeString | null;
@@ -51,7 +50,6 @@ export interface Mention {
 export interface CompanyInput {
   id?: string;
   name: string;
-  domain: string;
   companyType?: CompanyType;
   mediaPresence?: MediaPresence;
   lastMentionedAt?: IsoDateTimeString | null;
