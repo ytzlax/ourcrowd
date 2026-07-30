@@ -3,7 +3,6 @@ import {
   DataProviderFactory,
   type ProviderFactoryConfig,
 } from "./provider_factory.js";
-import { selectProviderType } from "./select_provider_type.js";
 import {
   DataProviderType,
   type Mention,
@@ -28,6 +27,16 @@ export interface RoutedDataFetcherConfig {
   providers?: ProviderFactoryConfig;
 }
 
+/**
+ * Returns the set of URLs that are already known for the company
+ * (e.g. present in mentions or q_mentions).
+ */
+export type AreUrlsKnown = (urls: string[]) => ReadonlySet<string>;
+
+export interface FetchForCompanyOptions {
+  areUrlsKnown?: AreUrlsKnown;
+}
+
 export class RoutedDataFetcher {
   private readonly providerFactory: DataProviderFactory;
 
@@ -35,13 +44,18 @@ export class RoutedDataFetcher {
     this.providerFactory = new DataProviderFactory(config.providers);
   }
 
-  public async fetchForCompany(company: CompanyMetadata): Promise<RoutedFetchResult> {
+  public async fetchForCompany(
+    company: CompanyMetadata,
+    options: FetchForCompanyOptions = {},
+  ): Promise<RoutedFetchResult> {
     const routeDecision = this.buildRouteDecision(company);
-    const attemptOrder = getProviderAttemptOrder(routeDecision.provider);
+    const attemptOrder = getProviderAttemptOrder();
 
     const attemptedProviders: DataProviderType[] = [];
     const skippedProviders: DataProviderType[] = [];
     const errors: ProviderAttemptError[] = [];
+    let hadSuccessfulFetch = false;
+    let lastProvider = attemptOrder[0] ?? DataProviderType.GOOGLE_RSS;
 
     for (const providerType of attemptOrder) {
       const provider = this.providerFactory.getProvider(providerType);
@@ -51,11 +65,19 @@ export class RoutedDataFetcher {
       }
 
       attemptedProviders.push(providerType);
+      lastProvider = providerType;
 
       try {
         const mentions = await provider.fetchMentions(company.name);
+        hadSuccessfulFetch = true;
+
+        const usable = this.selectUsableMentions(mentions, options.areUrlsKnown);
+        if (usable.length === 0) {
+          continue;
+        }
+
         return {
-          mentions,
+          mentions: usable,
           provider: providerType,
           routeDecision,
           attemptedProviders,
@@ -70,14 +92,52 @@ export class RoutedDataFetcher {
       }
     }
 
+    if (hadSuccessfulFetch) {
+      return {
+        mentions: [],
+        provider: lastProvider,
+        routeDecision,
+        attemptedProviders,
+        skippedProviders,
+        errors,
+      };
+    }
+
     throw new Error(
       `[RoutedDataFetcher] All providers failed for "${company.name}": ${this.summarizeErrors(errors, skippedProviders)}`,
     );
   }
 
+  private selectUsableMentions(
+    mentions: Mention[],
+    areUrlsKnown?: AreUrlsKnown,
+  ): Mention[] {
+    if (mentions.length === 0) {
+      return [];
+    }
+
+    if (!areUrlsKnown) {
+      return mentions;
+    }
+
+    const urls = mentions
+      .map((mention) => mention.url.trim())
+      .filter((url) => url.length > 0);
+    const knownUrls = areUrlsKnown(urls);
+
+    return mentions.filter((mention) => {
+      const url = mention.url.trim();
+      if (url.length === 0) {
+        return true;
+      }
+      return !knownUrls.has(url);
+    });
+  }
+
   private buildRouteDecision(company: CompanyMetadata): RouteDecision {
+    const [primary] = getProviderAttemptOrder();
     return {
-      provider: selectProviderType(company),
+      provider: primary ?? DataProviderType.GOOGLE_RSS,
       query: company.name,
       isAmbiguous: false,
     };

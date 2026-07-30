@@ -4,21 +4,22 @@ export {
   type RawMention,
 } from "./base_data_provider.js";
 
-export { getProviderAttemptOrder } from "./fallback_order.js";
+export {
+  PROVIDER_CHAIN,
+  getProviderAttemptOrder,
+} from "./fallback_order.js";
 export {
   DataProviderFactory,
   type ProviderFactoryConfig,
 } from "./provider_factory.js";
-export {
-  selectProviderType,
-  type ProviderRoutingCompany,
-} from "./select_provider_type.js";
 export { RoutedDataFetcher } from "./routed_data_fetcher.js";
 export type {
   CompanyMetadata,
   RouteDecision,
 } from "./router_types.js";
 export type {
+  AreUrlsKnown,
+  FetchForCompanyOptions,
   ProviderAttemptError,
   RoutedDataFetcherConfig,
   RoutedFetchResult,

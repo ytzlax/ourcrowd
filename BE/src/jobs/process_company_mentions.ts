@@ -32,9 +32,13 @@ export async function processCompanyMentions(
   company: CompanyMetadata,
   options: ProcessCompanyMentionsOptions,
 ): Promise<ProcessCompanyMentionsResult> {
-  const fetchResult = await options.fetcher.fetchForCompany(company);
   const dbCompany = options.db.ensureCompany({
     name: company.name,
+  });
+
+  const fetchResult = await options.fetcher.fetchForCompany(company, {
+    areUrlsKnown: (urls) =>
+      new Set(options.db.findKnownUrlsForCompany(dbCompany.id, urls)),
   });
 
   const { mentionsWithUrl, mentionsWithoutUrl } = partitionMentionsByUrl(

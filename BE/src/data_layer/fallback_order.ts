@@ -1,21 +1,15 @@
 import { DataProviderType } from "./base_data_provider.js";
 
-const FALLBACK_ORDER: Record<DataProviderType, DataProviderType[]> = {
-  [DataProviderType.GOOGLE_RSS]: [
-    DataProviderType.TAVILY,
-    DataProviderType.NEWS_API,
-  ],
-  [DataProviderType.TAVILY]: [
-    DataProviderType.NEWS_API,
-    DataProviderType.GOOGLE_RSS,
-  ],
-  [DataProviderType.NEWS_API]: [
-    DataProviderType.TAVILY,
-    DataProviderType.GOOGLE_RSS,
-  ],
-};
+/**
+ * Fixed attempt order for every company fetch:
+ * free RSS first, then NewsAPI, then Tavily as last resort.
+ */
+export const PROVIDER_CHAIN: readonly DataProviderType[] = [
+  DataProviderType.GOOGLE_RSS,
+  DataProviderType.NEWS_API,
+  DataProviderType.TAVILY,
+];
 
-export function getProviderAttemptOrder(primary: DataProviderType): DataProviderType[] {
-  const fallbacks = FALLBACK_ORDER[primary];
-  return [primary, ...fallbacks];
+export function getProviderAttemptOrder(): DataProviderType[] {
+  return [...PROVIDER_CHAIN];
 }

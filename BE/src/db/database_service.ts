@@ -596,6 +596,33 @@ export class DatabaseService {
     return rows.map((row) => this.mapMentionRow(row));
   }
 
+  /**
+   * URLs already seen for this company in either analyzed mentions or the fetch queue.
+   */
+  public findKnownUrlsForCompany(
+    companyId: string,
+    urls: string[],
+  ): string[] {
+    if (urls.length === 0) {
+      return [];
+    }
+
+    const placeholders = urls.map(() => "?").join(", ");
+    const rows = this.db
+      .prepare(
+        `
+          SELECT url FROM mentions
+          WHERE companyId = ? AND url IN (${placeholders})
+          UNION
+          SELECT url FROM q_mentions
+          WHERE companyId = ? AND url IN (${placeholders})
+        `,
+      )
+      .all(companyId, ...urls, companyId, ...urls) as Array<{ url: string }>;
+
+    return rows.map((row) => row.url);
+  }
+
   public getQuarterlyMentions(query: QuarterlyMentionsQuery = {}): Mention[] {
     const quarterStart = this.daysAgoIso(QUARTERLY_WINDOW_DAYS);
     const sortBy = query.sortBy ?? "publishedAt";

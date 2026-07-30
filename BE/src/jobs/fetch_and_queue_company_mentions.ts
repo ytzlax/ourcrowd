@@ -25,11 +25,15 @@ export async function fetchAndQueueCompanyMentions(
   company: CompanyMetadata,
   options: FetchAndQueueCompanyMentionsOptions,
 ): Promise<FetchAndQueueCompanyMentionsResult> {
-  const fetchResult = await fetchCompanyMentions(company, options.fetcher);
   const dbCompany = options.db.ensureCompany({
     name: company.name,
     companyType: company.companyType,
     mediaPresence: company.mediaPresence,
+  });
+
+  const fetchResult = await fetchCompanyMentions(company, options.fetcher, {
+    areUrlsKnown: (urls) =>
+      new Set(options.db.findKnownUrlsForCompany(dbCompany.id, urls)),
   });
 
   const { queueable, withoutUrl } = partitionQueueableMentions(fetchResult.mentions);
