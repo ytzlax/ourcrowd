@@ -29,7 +29,7 @@ export class SentimentAnalyzer {
       ...config.llm,
       model: LlmModel.LLAMA_3_2_3B,
       system: config.llm?.system ?? SENTIMENT_SYSTEM_PROMPT,
-      options: { temperature: 0.1, ...config.llm?.options },
+      options: { temperature: 0,numPredict: 100, ...config.llm?.options },
     });
   }
 
