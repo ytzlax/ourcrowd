@@ -176,7 +176,41 @@ Without budget constraints, **Tavily Search API** would be the ideal single choi
 
 This tiered approach guarantees that expensive API credits are consumed strictly as a last resort, balancing cost-efficiency with high data quality.
 
+### 3. LLM Selection & Reliability Strategy
 
+#### The Dilemma: Local LLM Constraints vs. Accuracy
+In an ideal scenario, a large cloud-based model (e.g., GPT-4o, Claude 3.5 Sonnet) would be used for high-accuracy text analysis. However, since the system is strictly required to run a **local model via Ollama**, hardware performance and execution speed become major constraints. 
+
+The primary goal was to select the smallest, fastest model capable of executing the task reliably without errors. Following benchmark testing, **`llama3.2`** (3B parameters) was selected as the optimal local model.
+
+---
+
+#### Mitigating Local LLM Limitations
+To empower a lightweight local model to perform accurately without hallucinations or false matches, three architectural mechanisms were introduced:
+
+##### 1. One-Time Entity Enrichment (Context Provision)
+* **The Problem:** Input company names alone (e.g., *3d Signals*) are ambiguous and provide insufficient context for a small LLM to classify correctly.
+* **The Solution:** During initial setup/onboarding, a one-time company enrichment process is executed via **Tavily API** to retrieve a concise background summary and industry context per company. 
+* **Persistence:** This metadata is saved locally (and would be stored in a production database in a deployed system) to enrich every prompt passed to the LLM during daily processing.
+
+##### 2. Reliability Scoring & "Human-in-the-Loop" Filtering
+* **The Problem:** LLMs can make mistakes, but end-users (investment teams) require high-trust data.
+* **The Solution:** The LLM is prompted to assign a **Relevance & Accuracy Score (1–10)** alongside its sentiment classification for each mention.
+  * **Filtering Threshold:** Any mention with a score **below 5** is discarded automatically.
+  * **User Control:** Mentions with scores **> 5** are stored with their assigned score. The UI Dashboard allows users to filter mentions by confidence score, giving them complete control over their risk tolerance and enabling human validation of lower-confidence mentions.
+
+##### 3. Precise Prompt Engineering
+Prompts were strictly engineered to be concise, structured, and deterministic. System prompts instruct the LLM to output structured data directly, reducing token generation overhead and eliminating conversational noise.
+
+---
+
+#### Model Choice Summary
+* **Selected Model:** `llama3.2` (3B parameters via Ollama).
+* **Why it was chosen:** 
+  
+  * **Exceptional Execution Speed & Low Latency**: Delivers rapid local inference times, which is essential for iterating over large batches of daily news articles without bottlenecking the system.
+  * **Low Resource Footprint:** Operates efficiently on standard developer hardware without requiring expensive dedicated VRAM/GPUs.
+  * **Structured JSON Precision:** Strictly follows prompt instructions to output valid JSON formats required for backend ingestion, especially when paired with Tavily background enrichment.
 
 ## 🏗️ Architecture & Overview
 
