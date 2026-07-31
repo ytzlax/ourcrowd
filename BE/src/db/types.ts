@@ -42,6 +42,8 @@ export interface Mention {
   publishedAt: IsoDateTimeString;
   sentiment: SentimentType;
   summary: string;
+  /** Relevance score from analysis (1–10). */
+  score: number;
   analyzedAt: IsoDateTimeString;
   createdAt: IsoDateTimeString;
 }
@@ -64,6 +66,7 @@ export interface MentionInput {
   publishedAt: IsoDateTimeString;
   sentiment: SentimentType;
   summary: string;
+  score: number;
   analyzedAt?: IsoDateTimeString;
   createdAt?: IsoDateTimeString;
 }

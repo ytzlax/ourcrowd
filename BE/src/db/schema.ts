@@ -1,6 +1,10 @@
 import type Database from "better-sqlite3";
 
 import {
+  RELEVANCE_SCORE_MAX,
+  RELEVANCE_SCORE_MIN,
+} from "../analysis/analysis_types.js";
+import {
   CompanyType,
   MediaPresence,
   MentionStatus,
@@ -34,6 +38,8 @@ const QUEUED_MENTION_STATUS_VALUES = Object.values(QueuedMentionStatus)
 
 const DEFAULT_COMPANY_TYPE = CompanyType.B2B;
 const DEFAULT_MEDIA_PRESENCE = MediaPresence.NICHE_TECH;
+/** Existing rows predate scoring; treat them as fully relevant. */
+const DEFAULT_MENTION_SCORE = RELEVANCE_SCORE_MAX;
 
 export function ensureSchema(db: Database.Database): void {
   db.exec(`
@@ -67,12 +73,17 @@ export function ensureSchema(db: Database.Database): void {
       sentiment TEXT NOT NULL
         CHECK (sentiment IN (${SENTIMENT_VALUES})),
       summary TEXT NOT NULL,
+      score INTEGER NOT NULL
+        DEFAULT ${DEFAULT_MENTION_SCORE}
+        CHECK (score BETWEEN ${RELEVANCE_SCORE_MIN} AND ${RELEVANCE_SCORE_MAX}),
       analyzedAt TEXT NOT NULL,
       createdAt TEXT NOT NULL,
       UNIQUE (companyId, url),
       FOREIGN KEY (companyId) REFERENCES companies(id) ON DELETE CASCADE
     );
   `);
+
+  ensureMentionColumns(db);
 
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_mentions_companyId
@@ -83,6 +94,9 @@ export function ensureSchema(db: Database.Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_mentions_createdAt
       ON mentions(createdAt);
+
+    CREATE INDEX IF NOT EXISTS idx_mentions_score
+      ON mentions(score);
   `);
 
   db.exec(`
@@ -162,6 +176,21 @@ function ensureCompanyColumns(db: Database.Database): void {
       ALTER TABLE companies
       ADD COLUMN mediaPresence TEXT NOT NULL
         DEFAULT ${quoteSqlString(DEFAULT_MEDIA_PRESENCE)}
+    `);
+  }
+}
+
+function ensureMentionColumns(db: Database.Database): void {
+  const columns = db
+    .prepare(`PRAGMA table_info(mentions)`)
+    .all() as Array<{ name: string }>;
+  const columnNames = new Set(columns.map((column) => column.name));
+
+  if (!columnNames.has("score")) {
+    db.exec(`
+      ALTER TABLE mentions
+      ADD COLUMN score INTEGER NOT NULL
+        DEFAULT ${DEFAULT_MENTION_SCORE}
     `);
   }
 }

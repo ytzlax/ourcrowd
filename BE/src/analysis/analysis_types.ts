@@ -2,16 +2,20 @@ import type { RawMention } from "../data_layer/base_data_provider.js";
 import type { JsonSchema } from "../llm/types.js";
 import { SentimentType } from "./sentiment_type.js";
 
+/** Relevance score returned by the LLM (1 = unrelated, 10 = clearly about the company). */
+export const RELEVANCE_SCORE_MIN = 1;
+export const RELEVANCE_SCORE_MAX = 10;
+
 export interface AnalyzedMention {
   mention: RawMention;
   companyName: string;
-  isRelevant: boolean;
+  score: number;
   sentiment: SentimentType;
   summary: string;
 }
 
 export interface RawSentimentDecision extends Record<string, unknown> {
-  is_relevant: boolean;
+  score: number;
   sentiment: string;
   summary: string;
 }
@@ -19,7 +23,11 @@ export interface RawSentimentDecision extends Record<string, unknown> {
 export const SENTIMENT_DECISION_SCHEMA: JsonSchema = {
   type: "object",
   properties: {
-    is_relevant: { type: "boolean" },
+    score: {
+      type: "integer",
+      minimum: RELEVANCE_SCORE_MIN,
+      maximum: RELEVANCE_SCORE_MAX,
+    },
     sentiment: {
       type: "string",
       enum: [
@@ -30,5 +38,5 @@ export const SENTIMENT_DECISION_SCHEMA: JsonSchema = {
     },
     summary: { type: "string" },
   },
-  required: ["is_relevant", "sentiment", "summary"],
+  required: ["score", "sentiment", "summary"],
 };

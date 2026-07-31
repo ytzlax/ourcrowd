@@ -69,6 +69,7 @@ interface MentionRow {
   publishedAt: string;
   sentiment: SentimentType;
   summary: string;
+  score: number;
   analyzedAt: string;
   createdAt: string;
 }
@@ -245,6 +246,7 @@ export class DatabaseService {
         publishedAt,
         sentiment,
         summary,
+        score,
         analyzedAt,
         createdAt
       )
@@ -257,6 +259,7 @@ export class DatabaseService {
         @publishedAt,
         @sentiment,
         @summary,
+        @score,
         @analyzedAt,
         @createdAt
       )
@@ -277,6 +280,7 @@ export class DatabaseService {
           publishedAt: mention.publishedAt,
           sentiment: mention.sentiment,
           summary: mention.summary,
+          score: mention.score,
           analyzedAt: mention.analyzedAt ?? now,
           createdAt: mention.createdAt ?? now,
         });
@@ -545,6 +549,7 @@ export class DatabaseService {
             publishedAt,
             sentiment,
             summary,
+            score,
             analyzedAt,
             createdAt
           FROM mentions
@@ -578,6 +583,7 @@ export class DatabaseService {
             publishedAt,
             sentiment,
             summary,
+            score,
             analyzedAt,
             createdAt
           FROM mentions
@@ -643,6 +649,7 @@ export class DatabaseService {
             publishedAt,
             sentiment,
             summary,
+            score,
             analyzedAt,
             createdAt
           FROM mentions
@@ -706,6 +713,7 @@ export class DatabaseService {
             publishedAt,
             sentiment,
             summary,
+            score,
             analyzedAt,
             createdAt
           FROM mentions
@@ -913,6 +921,7 @@ export class DatabaseService {
             publishedAt,
             sentiment,
             summary,
+            score,
             analyzedAt,
             createdAt
           FROM mentions
@@ -947,6 +956,7 @@ export class DatabaseService {
       publishedAt: row.publishedAt,
       sentiment: row.sentiment,
       summary: row.summary,
+      score: row.score,
       analyzedAt: row.analyzedAt,
       createdAt: row.createdAt,
     };
