@@ -69,7 +69,7 @@ ollama pull llama3.2
 
 ### Step 3: Configure Environment Variables
 
-Create a .env file in the root directory:
+Create a `.env` file in the `BE/` directory (you can copy from `BE/.env.example`):
 
 ```env
 PORT=3000
@@ -88,41 +88,63 @@ ALERT_LOOKBACK_HOURS=24
 
 ### 🚀 Running the Project
 
+All backend commands run from `BE/`. The dashboard runs from `FE/`.
 
-
-#### 1. Run Data Collection & Pipeline
-
-Fetches latest news, routes queries, classifies sentiment via Ollama, and updates the local data folder:
+**Quick start:**
 
 ```bash
-npm run pipeline
+./scripts/setup.sh              # install deps, create BE/.env, load companies
+./scripts/setup.sh --enrich     # optional: also enrich via Tavily (needs TAVILY_API_KEY)
+./scripts/dev.sh                # API + FE + fetch/analysis/alert crons
+```
+
+Then open [http://localhost:5173](http://localhost:5173). Press `Ctrl+C` in the `dev.sh` terminal to stop everything.
+
+Manual steps below if you prefer to run processes separately.
+
+
+
+#### 1. One-time data setup (BE)
+
+Loads the company seed list into SQLite, then enriches each company via Tavily (requires `TAVILY_API_KEY`):
+
+```bash
+cd BE
+npm run load-companies
+npm run enrich-companies
 ```
 
 
 
-#### 2. Run Daily Alert Check
+#### 2. Start background jobs (BE)
 
-Runs a daily summary: queries mentions from the last 24 hours (configurable via `ALERT_LOOKBACK_HOURS`), groups them by company, and prints a structured console alert box. Default schedule is 09:00 Asia/Jerusalem:
+Run each job in its own terminal from `BE/`:
 
 ```bash
-# Long-running daily schedule
-npm run alert-cron
+# Long-running schedules
+npm run fetch-cron       # poll news providers (~every 10 min)
+npm run analysis-cron    # classify queued mentions via Ollama (~every 5 min)
+npm run alert-cron       # daily console alert (default 09:00 Asia/Jerusalem)
 
 # One-shot (for testing / evaluation)
+npm run fetch-cron:now
+npm run analysis-cron:now
 npm run alert-cron:now
 ```
 
 
 
-#### 3. Start Dashboard UI
-
-Starts the local dashboard server:
+#### 3. Start API + Dashboard
 
 ```bash
-npm start
+# Terminal A — API gateway (http://localhost:3000)
+cd BE && npm run dev
+
+# Terminal B — Vite dashboard (http://localhost:5173)
+cd FE && npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:5173](http://localhost:5173) in your browser. The FE dev server proxies `/api` to the backend on port 3000.
 
 ---
 
