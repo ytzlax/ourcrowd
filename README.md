@@ -9,7 +9,7 @@ root/
 ├── BE/                      # Backend (Express API, pipeline, jobs)
 │   ├── src/
 │   │   ├── analysis/        # Mention normalization & sentiment classification
-│   │   ├── data_layer/      # News providers (RSS, Tavily, NewsAPI) + smart router
+│   │   ├── data_ingestion_layer/      # News providers (RSS, Tavily, NewsAPI) + smart router
 │   │   ├── data_processing/ # Company load/enrich & data pipeline
 │   │   ├── db/              # SQLite persistence
 │   │   ├── gateway/         # Express controllers & API routes
