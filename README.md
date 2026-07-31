@@ -328,6 +328,8 @@ To assess and validate the local model's classification capabilities, a multi-st
 
 ## 🏗️ Architecture & Overview
 
+![Architecture & Overview](charts/system.drawio.png)
+
 System Architecture
 
 The system is structured into five key layers:
