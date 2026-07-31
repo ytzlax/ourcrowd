@@ -137,37 +137,44 @@ Simplified Developer Experience (DX): The entire pipeline runs within a unified 
 
 Microservices-Ready Blueprint: Each module communicates through clean internal abstractions and interfaces. If required in a high-scale production setting, any layer (such as the Ollama LLM integration or Data Scraper) can be seamlessly extracted into an independent microservice with zero changes to core business logic.
 
-### 2. Data Acquisition Layer (Data Providers & Sourcing Strategy)
+### 2. Data Provider Selection & Strategy
 
+#### Evaluated Options:
+* **Web Scraping (Puppeteer / Playwright / Cheerio):**
+  * *Pros:* Completely free, full DOM control over target news portals.
+  * *Cons:* Extremely fragile (breaks on minor HTML changes), high maintenance overhead, and frequent IP/Anti-bot blockages (CAPTCHA, Cloudflare).
+* **Direct News Search APIs (e.g., Tavily, NewsAPI):**
+  * *Pros:* Highly reliable, structured JSON responses (Title, URL, Publish Date), excellent precision.
+  * *Cons:* Strict rate limits and costs scale with usage frequency.
+* **RSS Feeds (e.g., Google News RSS):**
+  * *Pros:* Free, highly reliable stream of news articles, zero rate limits.
+  * *Cons:* Noisy for ambiguous company names (e.g., Island, Ro, Near, Peak).
 
+---
 
-#### 🔍 The Dilemma & Evaluated Approaches
+#### Decision:
+Web Scraping was completely ruled out early in the process due to its high maintenance overhead and high risk of anti-bot blocking.
 
-When designing the news collection pipeline, three primary strategies were evaluated for gathering company mentions:
+To select among the remaining providers (**Google News RSS**, **NewsAPI.org**, and **Tavily Search API**), the following parameters were evaluated:
 
-- **Web Scraping (Puppeteer / Playwright / Cheerio)**:
-  - *Pros*: Completely free, full DOM control over target news portals.
-  - *Cons*: Extremely fragile (breaking on minor HTML changes), high maintenance overhead, and frequent IP/Anti-bot blockages (CAPTCHA, Cloudflare).
-- **Direct News Search APIs (e.g., Tavily, NewsAPI)**:
-  - *Pros*: Highly reliable, structured JSON response (Title, URL, Publish Date), excellent precision.
-  - *Cons*: Strict rate limits and cost scales with frequency.
-- **RSS Feeds (e.g., Google News RSS)**:
-  - *Pros*: Free, highly reliable stream of news articles.
-  - *Cons*: Noisy for ambiguous company names (e.g., *Island*, *Ro*, *Near*, *Peak*).
+| Parameter | Google News RSS | NewsAPI.org | Tavily Search API |
+| :--- | :--- | :--- | :--- |
+| **Niche / B2B Company Coverage** | 🟢 Very High | 🔴 Low (Mainstream news only) | 🟢 Very High |
+| **Context Depth & Quality** | 🟡 Medium (Title + Snippet) | 🟡 Medium (Title + Description) | 🟢 Very High (Full / Extracted content) |
+| **Data Freshness** | 🟢 Real-time (Immediate) | 🔴 24-hour delay (Free tier) | 🟢 Real-time |
+| **Disambiguation / Generic Names** | 🟡 Requires Exact Match (`"Company"`) | 🟡 Medium | 🟢 High (Supports Search Domain / Topic) |
+| **Rate Limits & Costs** | 🟢 100% Free, No Rate Limits | 🔴 100 requests/day & CORS blocked | 🔴 Quotas strictly tied to API Key limits |
 
+---
 
+#### Final Strategy: Fallback Cascade Architecture
+Without budget constraints, **Tavily Search API** would be the ideal single choice. However, to optimize costs while ensuring maximum coverage, a 3-tier **Fallback Cascade** mechanism was designed:
 
-#### 💡 Final Decision & Architecture Solution
+1. **Primary Provider — Google News RSS (Tier 1):** The system first queries Google News RSS because it is 100% free with zero rate limits, provides real-time coverage, and handles most portfolio companies effectively.
+2. **Secondary Fallback — NewsAPI.org (Tier 2):** If Google News RSS fails or returns low-confidence results, the system cascades to NewsAPI.org to check mainstream press coverage within its free-tier query budget (100 requests/day).
+3. **Final Fallback — Tavily Search API (Tier 3):** If the previous tiers fail to return relevant mentions (i.e., results that pass the LLM relevance threshold or return empty results for hard-to-track B2B companies), the system invokes Tavily as the high-precision option.
 
-To achieve a balance between **cost efficiency, reliability, and search precision**, the system adopts a hybrid **RSS + Search API strategy governed by an LLM-powered Smart Router**:
-
-1. **Eliminated Direct Web Scraping**: To maintain a production-grade, low-maintenance pipeline and avoid Anti-Bot IP blocks.
-2. **Hybrid RSS & Search API Execution**:
-  - **Google News RSS** is utilized as the primary free data engine for unambiguous company names (e.g., *ZutaCore*, *BioCatch*).
-  - **Structured Search APIs (Tavily/NewsAPI)** are used as high-precision fallback engines.
-3. **LLM Query Disambiguation & Smart Routing**:
-  - Before making an HTTP request, the **Local LLM (Ollama)** evaluates the target company metadata (name, domain, sector).
-  - The LLM dynamically constructs an optimized search query (e.g., expanding `"Island"` to `"Island" AND ("Enterprise Browser" OR "Cybersecurity")`) and routes the query to the most cost-effective data provider.
+This tiered approach guarantees that expensive API credits are consumed strictly as a last resort, balancing cost-efficiency with high data quality.
 
 
 
