@@ -356,7 +356,8 @@ The system is structured into five key layers:
   * **UI**: A web frontend that visualizes press coverage across tracked portfolio companies:
     * **Quarterly Coverage**: Displays press mentions filtered by the last quarter, categorized by sentiment (Positive, Negative, Neutral), with direct links back to original source articles.
     * **Mention Status Indicator**: Surfaces real-time status for each company based on its latest press activity (e.g., Last mentioned 3 days ago, 45 days ago, or No coverage found).
-    * **Daily Alert Notifications:** A dedicated scheduled job (`npm run alert-cron`, or `npm run alert-cron:now` on demand) scans analyzed mentions from the last 24 hours, deduplicates by company+URL, groups results by company, and prints a structured console alert (title, sentiment, source URL, publication time). When no new coverage exists, it logs a simple INFO status line.
+
+Alongside these layers, a daily alert job (`npm run alert-cron`, or `npm run alert-cron:now` on demand) reads analyzed mentions from the last 24 hours, deduplicates by company+URL, groups them by company, and prints a structured console summary. When no new coverage exists, it logs a simple INFO status line.
 
 ---
 
