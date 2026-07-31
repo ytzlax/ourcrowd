@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Start API, dashboard, and background jobs for local development.
-# Usage: ./scripts/dev.sh
+# Install deps and start the local stack (API, FE, crons).
+# Usage: ./scripts/dev-run.sh
 # Ctrl+C stops all processes.
 
 set -euo pipefail
@@ -25,14 +25,17 @@ cleanup() {
 
 trap cleanup EXIT INT TERM
 
-if [[ ! -f "$BE_DIR/.env" ]]; then
-  echo "Missing BE/.env — run ./scripts/setup.sh first" >&2
-  exit 1
-fi
+echo "==> Installing BE dependencies"
+npm install --prefix "$BE_DIR"
 
-if [[ ! -d "$BE_DIR/node_modules" || ! -d "$FE_DIR/node_modules" ]]; then
-  echo "Dependencies missing — run ./scripts/setup.sh first" >&2
-  exit 1
+echo "==> Installing FE dependencies"
+npm install --prefix "$FE_DIR"
+
+if [[ ! -f "$BE_DIR/.env" ]]; then
+  cp "$BE_DIR/.env.example" "$BE_DIR/.env"
+  echo "==> Created BE/.env from BE/.env.example — fill in NEWS_API_KEY / TAVILY_API_KEY"
+else
+  echo "==> BE/.env already exists — leaving it unchanged"
 fi
 
 start_bg() {
@@ -64,5 +67,4 @@ echo "==> Starting FE dashboard"
 ) &
 PIDS+=($!)
 
-# Keep the script alive until a child exits or Ctrl+C
 wait

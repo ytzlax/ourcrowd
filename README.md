@@ -41,14 +41,11 @@ root/
 
 
 
-### Step 1: Clone & Install Dependencies
+### Step 1: Clone
 
 ```bash
 git clone https://github.com/ytzlax/ourcrowd.git
 cd ourcrowd/BE
-npm install
-cd ../FE
-npm install
 ```
 
 
@@ -86,19 +83,18 @@ ALERT_LOOKBACK_HOURS=24
 
 
 
-### 🚀 Running the Project
+### 🚀 Install Dependencies & Running the Project
 
 All backend commands run from `BE/`. The dashboard runs from `FE/`.
 
 **Quick start:**
 
 ```bash
-./scripts/setup.sh              # install deps, create BE/.env, load companies
-./scripts/setup.sh --enrich     # optional: also enrich via Tavily (needs TAVILY_API_KEY)
-./scripts/dev.sh                # API + FE + fetch/analysis/alert crons
+./scripts/dev-run.sh            # install deps + API/FE + fetch/analysis/alert crons
+./scripts/full-install.sh       # same as above, plus load-companies + enrich-companies
 ```
 
-Then open [http://localhost:5173](http://localhost:5173). Press `Ctrl+C` in the `dev.sh` terminal to stop everything.
+Then open [http://localhost:5173](http://localhost:5173). Press `Ctrl+C` in the terminal to stop everything.
 
 Manual steps below if you prefer to run processes separately.
 
