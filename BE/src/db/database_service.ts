@@ -11,8 +11,6 @@ import {
 } from "./sentiment_stats.js";
 import { RELEVANCE_SCORE_MIN } from "../analysis/analysis_types.js";
 import {
-  CompanyType,
-  MediaPresence,
   MentionStatus,
   type Company,
   type CompanyInput,
@@ -41,8 +39,6 @@ const MS_PER_MINUTE = 60 * 1000;
 interface CompanyRow {
   id: string;
   name: string;
-  companyType: CompanyType;
-  mediaPresence: MediaPresence;
   lastMentionedAt: string | null;
   status: MentionStatus;
   createdAt: string;
@@ -52,8 +48,6 @@ interface CompanyRow {
 const COMPANY_SELECT_COLUMNS = `
   id,
   name,
-  companyType,
-  mediaPresence,
   lastMentionedAt,
   status,
   createdAt,
@@ -142,36 +136,13 @@ export class DatabaseService {
     return row ? this.mapCompanyRow(row) : null;
   }
 
-  public ensureCompany(input: {
-    name: string;
-    companyType?: CompanyType;
-    mediaPresence?: MediaPresence;
-  }): Company {
+  public ensureCompany(input: { name: string }): Company {
     const existing = this.getCompanyByName(input.name);
     if (existing) {
-      if (input.companyType === undefined && input.mediaPresence === undefined) {
-        return existing;
-      }
-
-      return this.seedCompanies([
-        {
-          id: existing.id,
-          name: existing.name,
-          companyType: input.companyType ?? existing.companyType,
-          mediaPresence: input.mediaPresence ?? existing.mediaPresence,
-          lastMentionedAt: existing.lastMentionedAt,
-          status: existing.status,
-        },
-      ])[0];
+      return existing;
     }
 
-    return this.seedCompanies([
-      {
-        name: input.name,
-        companyType: input.companyType,
-        mediaPresence: input.mediaPresence,
-      },
-    ])[0];
+    return this.seedCompanies([{ name: input.name }])[0];
   }
 
   public seedCompanies(companiesList: CompanyInput[]): Company[] {
@@ -180,8 +151,6 @@ export class DatabaseService {
       INSERT INTO companies (
         id,
         name,
-        companyType,
-        mediaPresence,
         lastMentionedAt,
         status,
         createdAt,
@@ -190,8 +159,6 @@ export class DatabaseService {
       VALUES (
         @id,
         @name,
-        @companyType,
-        @mediaPresence,
         @lastMentionedAt,
         @status,
         @createdAt,
@@ -199,8 +166,6 @@ export class DatabaseService {
       )
       ON CONFLICT(id) DO UPDATE SET
         name = excluded.name,
-        companyType = excluded.companyType,
-        mediaPresence = excluded.mediaPresence,
         updatedAt = excluded.updatedAt
     `);
 
@@ -213,8 +178,6 @@ export class DatabaseService {
         const row: CompanyRow = {
           id,
           name: company.name,
-          companyType: company.companyType ?? CompanyType.B2B,
-          mediaPresence: company.mediaPresence ?? MediaPresence.NICHE_TECH,
           lastMentionedAt: company.lastMentionedAt ?? null,
           status: company.status ?? MentionStatus.NO_COVERAGE_FOUND,
           createdAt,
@@ -933,8 +896,6 @@ export class DatabaseService {
     return {
       id: row.id,
       name: row.name,
-      companyType: row.companyType,
-      mediaPresence: row.mediaPresence,
       lastMentionedAt: row.lastMentionedAt,
       status: row.status,
       createdAt: row.createdAt,

@@ -1,12 +1,9 @@
 import { DataProviderType } from "./base_data_provider.js";
-import { CompanyType, MediaPresence } from "../db/types.js";
 
 export interface CompanyMetadata {
   name: string;
   sector?: string;
   context?: string;
-  companyType: CompanyType;
-  mediaPresence: MediaPresence;
 }
 
 export interface RouteDecision {

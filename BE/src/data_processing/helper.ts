@@ -1,8 +1,8 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync, readFileSync } from "node:fs";
-import { CompanyEnrichmentRecord, RawCompanyClassification, TavilyEnrichResponse } from "./types.js";
-import { CompanyType, MediaPresence } from "../db/types.js";
+import { CompanyEnrichmentRecord, TavilyEnrichResponse } from "./types.js";
+
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 
 const COMPANIES_FILE = path.resolve(MODULE_DIR, "../../ourcrowd_companies.txt");
@@ -92,48 +92,4 @@ export async function fetchTavilyCompanyData(
     }
 
     return raw as TavilyEnrichResponse;
-}
-
-export function parseCompanyType(value: string): CompanyType {
-    const normalized = value.trim();
-    const match = Object.values(CompanyType).find(
-        (entry) => entry.toLowerCase() === normalized.toLowerCase(),
-    );
-
-    if (!match) {
-        throw new Error(`[classifyCompanies] Invalid company_type: "${value}"`);
-    }
-
-    return match;
-}
-
-export function parseMediaPresence(value: string): MediaPresence {
-    const normalized = value.trim().toLowerCase();
-
-    if (Object.values(MediaPresence).includes(normalized as MediaPresence)) {
-        return normalized as MediaPresence;
-    }
-
-    throw new Error(`[classifyCompanies] Invalid media_presence: "${value}"`);
-}
-function normalizeCompanyName(name: string): string {
-    return name
-      .replace(/\([^)]*\)/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .toLowerCase();
-  }
-
-export function findClassificationForName(
-    rawItems: RawCompanyClassification[],
-    name: string,
-): RawCompanyClassification | undefined {
-    const needle = name.trim().toLowerCase();
-    const exact = rawItems.find((item) => item.name.trim().toLowerCase() === needle);
-    if (exact) {
-        return exact;
-    }
-
-    const needleBase = normalizeCompanyName(name);
-    return rawItems.find((item) => normalizeCompanyName(item.name) === needleBase);
 }

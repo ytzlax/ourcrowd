@@ -134,8 +134,6 @@ async function processQueuedMentionGroup(
   const companyMetadata: CompanyMetadata = {
     name: company.name,
     context: getCompanyEnrichmentContext(company.name),
-    companyType: company.companyType,
-    mediaPresence: company.mediaPresence,
   };
 
   const mentions = items.map((item) => queuedMentionToMention(item));

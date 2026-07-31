@@ -165,7 +165,5 @@ export function createMentionFetchManagerFromEnv(
 function toCompanyMetadata(company: Company): CompanyMetadata {
   return {
     name: company.name,
-    companyType: company.companyType,
-    mediaPresence: company.mediaPresence,
   };
 }

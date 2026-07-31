@@ -5,8 +5,6 @@ import {
   RELEVANCE_SCORE_MIN,
 } from "../analysis/analysis_types.js";
 import {
-  CompanyType,
-  MediaPresence,
   MentionStatus,
   QueuedMentionStatus,
   SentimentType,
@@ -24,20 +22,10 @@ const MENTION_STATUS_VALUES = Object.values(MentionStatus)
   .map((value) => quoteSqlString(value))
   .join(", ");
 
-const COMPANY_TYPE_VALUES = Object.values(CompanyType)
-  .map((value) => quoteSqlString(value))
-  .join(", ");
-
-const MEDIA_PRESENCE_VALUES = Object.values(MediaPresence)
-  .map((value) => quoteSqlString(value))
-  .join(", ");
-
 const QUEUED_MENTION_STATUS_VALUES = Object.values(QueuedMentionStatus)
   .map((value) => quoteSqlString(value))
   .join(", ");
 
-const DEFAULT_COMPANY_TYPE = CompanyType.B2B;
-const DEFAULT_MEDIA_PRESENCE = MediaPresence.NICHE_TECH;
 /** Existing rows predate scoring; treat them as fully relevant. */
 const DEFAULT_MENTION_SCORE = RELEVANCE_SCORE_MAX;
 
@@ -46,12 +34,6 @@ export function ensureSchema(db: Database.Database): void {
     CREATE TABLE IF NOT EXISTS companies (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
-      companyType TEXT NOT NULL
-        DEFAULT ${quoteSqlString(DEFAULT_COMPANY_TYPE)}
-        CHECK (companyType IN (${COMPANY_TYPE_VALUES})),
-      mediaPresence TEXT NOT NULL
-        DEFAULT ${quoteSqlString(DEFAULT_MEDIA_PRESENCE)}
-        CHECK (mediaPresence IN (${MEDIA_PRESENCE_VALUES})),
       lastMentionedAt TEXT NULL,
       status TEXT NOT NULL
         CHECK (status IN (${MENTION_STATUS_VALUES})),
@@ -163,20 +145,13 @@ function ensureCompanyColumns(db: Database.Database): void {
     .all() as Array<{ name: string }>;
   const columnNames = new Set(columns.map((column) => column.name));
 
-  if (!columnNames.has("companyType")) {
-    db.exec(`
-      ALTER TABLE companies
-      ADD COLUMN companyType TEXT NOT NULL
-        DEFAULT ${quoteSqlString(DEFAULT_COMPANY_TYPE)}
-    `);
+  // Drop legacy unused columns from older DBs.
+  if (columnNames.has("companyType")) {
+    db.exec(`ALTER TABLE companies DROP COLUMN companyType`);
   }
 
-  if (!columnNames.has("mediaPresence")) {
-    db.exec(`
-      ALTER TABLE companies
-      ADD COLUMN mediaPresence TEXT NOT NULL
-        DEFAULT ${quoteSqlString(DEFAULT_MEDIA_PRESENCE)}
-    `);
+  if (columnNames.has("mediaPresence")) {
+    db.exec(`ALTER TABLE companies DROP COLUMN mediaPresence`);
   }
 }
 

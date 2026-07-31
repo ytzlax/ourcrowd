@@ -25,4 +25,5 @@ npm-debug.log*
 
 # Runtime data
 data/
-
+.specstory/
+.cursorindexingignore

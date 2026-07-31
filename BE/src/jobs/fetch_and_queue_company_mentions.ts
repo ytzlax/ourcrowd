@@ -27,8 +27,6 @@ export async function fetchAndQueueCompanyMentions(
 ): Promise<FetchAndQueueCompanyMentionsResult> {
   const dbCompany = options.db.ensureCompany({
     name: company.name,
-    companyType: company.companyType,
-    mediaPresence: company.mediaPresence,
   });
 
   const fetchResult = await fetchCompanyMentions(company, options.fetcher, {
