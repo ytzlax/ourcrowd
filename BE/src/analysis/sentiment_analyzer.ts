@@ -20,7 +20,7 @@ const SENTIMENT_SYSTEM_PROMPT =
   "Respond only with valid JSON matching the requested schema.";
 
 /** Mentions with score >= this value are treated as relevant and kept. */
-export const DEFAULT_RELEVANCE_SCORE_THRESHOLD = 7;
+export const DEFAULT_RELEVANCE_SCORE_THRESHOLD = 5;
 
 export interface SentimentAnalyzerConfig {
   llm?: LlmConfig;
