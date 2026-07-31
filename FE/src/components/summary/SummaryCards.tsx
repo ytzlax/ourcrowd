@@ -1,19 +1,8 @@
-import {
-  Activity,
-  Building2,
-  Newspaper,
-  SmilePlus,
-} from "lucide-react";
+import { Building2, Newspaper, SmilePlus } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { useDashboardSummary } from "@/hooks/useDashboardQueries";
-import {
-  formatDateTime,
-  formatInteger,
-  formatPercent,
-  formatRelativeFromNow,
-} from "@/lib/format";
-import type { AlertStatus, SentimentBreakdown } from "@/types";
+import { formatInteger, formatPercent } from "@/lib/format";
+import type { SentimentBreakdown } from "@/types";
 import { MetricCard } from "./MetricCard";
 import { SummaryCardsError } from "./SummaryCardsError";
 import { SummaryCardsSkeleton } from "./SummaryCardsSkeleton";
@@ -39,7 +28,7 @@ export function SummaryCards() {
 
   return (
     <div
-      className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
       aria-busy={isFetching}
     >
       <MetricCard
@@ -65,17 +54,6 @@ export function SummaryCards() {
         footer={<SentimentBars breakdown={data.sentimentBreakdown} />}
       >
         {formatInteger(data.sentimentBreakdown.total)}
-      </MetricCard>
-
-      <MetricCard
-        title="Daily alert status"
-        description={alertDescription(data.alertStatus)}
-        icon={Activity}
-        footer={<AlertBadge status={data.alertStatus} />}
-      >
-        {data.alertStatus.lastExecutedAt
-          ? formatRelativeFromNow(data.alertStatus.lastExecutedAt)
-          : "—"}
       </MetricCard>
     </div>
   );
@@ -130,34 +108,4 @@ function SentimentBars({ breakdown }: { breakdown: SentimentBreakdown }) {
       </ul>
     </div>
   );
-}
-
-function AlertBadge({ status }: { status: AlertStatus }) {
-  const variant =
-    status.status === "success"
-      ? "success"
-      : status.status === "failed"
-        ? "destructive"
-        : "warning";
-
-  const label =
-    status.status === "success"
-      ? "Success"
-      : status.status === "failed"
-        ? "Failed"
-        : "Pending";
-
-  return (
-    <div className="mt-3">
-      <Badge variant={variant}>{label}</Badge>
-    </div>
-  );
-}
-
-function alertDescription(status: AlertStatus): string {
-  if (!status.lastExecutedAt) {
-    return "No analysis runs recorded yet";
-  }
-
-  return `Last run ${formatDateTime(status.lastExecutedAt)}`;
 }

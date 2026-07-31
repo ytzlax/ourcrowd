@@ -1,5 +1,4 @@
 import type {
-  AlertStatus,
   CompanyWithStats,
   Mention,
   SentimentBreakdown,
@@ -9,7 +8,6 @@ export interface DashboardSummaryResponse {
   totalCompanies: number;
   quarterlyMentionCount: number;
   sentimentBreakdown: SentimentBreakdown;
-  alertStatus: AlertStatus;
 }
 
 export interface CompaniesResponse {

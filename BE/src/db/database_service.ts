@@ -11,7 +11,6 @@ import {
 } from "./sentiment_stats.js";
 import { RELEVANCE_SCORE_MIN } from "../analysis/analysis_types.js";
 import {
-  AlertJobStatus,
   CompanyType,
   MediaPresence,
   MentionStatus,
@@ -34,7 +33,7 @@ import {
   type SentimentType,
 } from "./types.js";
 
-const QUARTERLY_WINDOW_DAYS = 100;
+const QUARTERLY_WINDOW_DAYS = 90;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const MS_PER_HOUR = 60 * 60 * 1000;
 const MS_PER_MINUTE = 60 * 1000;
@@ -822,19 +821,11 @@ export class DatabaseService {
     const companies = this.getAllCompanies();
     const quarterlyMentions = this.getQuarterlyMentions();
     const sentimentCounts = countSentiments(quarterlyMentions);
-    const lastExecutedAt = this.getLatestAnalyzedAt();
 
     return {
       totalCompanies: companies.length,
       quarterlyMentionCount: quarterlyMentions.length,
       sentimentBreakdown: toSentimentBreakdown(sentimentCounts),
-      alertStatus: {
-        lastExecutedAt,
-        status:
-          lastExecutedAt === null
-            ? AlertJobStatus.PENDING
-            : AlertJobStatus.SUCCESS,
-      },
     };
   }
 
@@ -875,19 +866,6 @@ export class DatabaseService {
     }
 
     return countsByCompany;
-  }
-
-  private getLatestAnalyzedAt(): IsoDateTimeString | null {
-    const row = this.db
-      .prepare(
-        `
-          SELECT MAX(analyzedAt) AS lastAnalyzedAt
-          FROM mentions
-        `,
-      )
-      .get() as { lastAnalyzedAt: string | null } | undefined;
-
-    return row?.lastAnalyzedAt ?? null;
   }
 
   private refreshCompanyMentionStatus(companyId: string): void {

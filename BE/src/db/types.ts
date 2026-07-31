@@ -154,23 +154,10 @@ export interface CompanyWithStats extends Company {
   sentimentCounts: SentimentCounts;
 }
 
-export enum AlertJobStatus {
-  SUCCESS = "success",
-  FAILED = "failed",
-  PENDING = "pending",
-}
-
-export interface AlertStatus {
-  /** Proxy derived from the latest mention.analyzedAt across the portfolio. */
-  lastExecutedAt: IsoDateTimeString | null;
-  status: AlertJobStatus;
-}
-
 export interface DashboardSummary {
   totalCompanies: number;
   quarterlyMentionCount: number;
   sentimentBreakdown: SentimentBreakdown;
-  alertStatus: AlertStatus;
 }
 
 export type CompanyStatusFilter = MentionStatus | "all";

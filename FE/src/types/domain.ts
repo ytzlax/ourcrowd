@@ -88,14 +88,6 @@ export interface CompanyWithStats extends Company {
   sentimentCounts: SentimentCounts;
 }
 
-export type AlertJobStatus = "success" | "failed" | "pending";
-
-export interface AlertStatus {
-  /** Proxy derived from the latest mention.analyzedAt across the portfolio. */
-  lastExecutedAt: IsoDateTimeString | null;
-  status: AlertJobStatus;
-}
-
 export type CompanyStatusFilter = MentionStatus | "all";
 
 export interface CompaniesQueryParams {
