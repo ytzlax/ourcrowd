@@ -34,6 +34,8 @@ export function MentionCard({ mention }: MentionCardProps) {
             {domain}
             <span className="mx-1.5 text-border">·</span>
             {formatDateTime(mention.publishedAt)}
+            <span className="mx-1.5 text-border">·</span>
+            Score {mention.score}/10
           </p>
         </div>
         <SentimentBadge sentiment={mention.sentiment} />

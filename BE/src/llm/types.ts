@@ -7,6 +7,8 @@ export interface JsonSchema {
   required?: string[];
   description?: string;
   enum?: string[];
+  minimum?: number;
+  maximum?: number;
 }
 
 export type LlmResponseFormat = "json" | JsonSchema;

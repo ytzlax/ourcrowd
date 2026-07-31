@@ -6,9 +6,12 @@ import { MentionsDrawer } from "@/components/mentions/MentionsDrawer";
 import { SummaryCards } from "@/components/summary/SummaryCards";
 import type { CompanyWithStats } from "@/types";
 
+const DEFAULT_MIN_SCORE = 1;
+
 function App() {
   const [selectedCompany, setSelectedCompany] =
     useState<CompanyWithStats | null>(null);
+  const [minScore, setMinScore] = useState(DEFAULT_MIN_SCORE);
 
   return (
     <DashboardLayout>
@@ -43,13 +46,17 @@ function App() {
           </div>
           <CompanyTable
             selectedCompanyId={selectedCompany?.id ?? null}
+            minScore={minScore}
             onSelectCompany={setSelectedCompany}
+            onMinScoreChange={setMinScore}
+            onClearSelection={() => setSelectedCompany(null)}
           />
         </section>
       </div>
 
       <MentionsDrawer
         company={selectedCompany}
+        minScore={minScore}
         onClose={() => setSelectedCompany(null)}
       />
     </DashboardLayout>

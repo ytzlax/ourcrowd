@@ -9,6 +9,7 @@ import {
   emptySentimentCounts,
   toSentimentBreakdown,
 } from "./sentiment_stats.js";
+import { RELEVANCE_SCORE_MIN } from "../analysis/analysis_types.js";
 import {
   AlertJobStatus,
   CompanyType,
@@ -69,6 +70,7 @@ interface MentionRow {
   publishedAt: string;
   sentiment: SentimentType;
   summary: string;
+  score: number;
   analyzedAt: string;
   createdAt: string;
 }
@@ -245,6 +247,7 @@ export class DatabaseService {
         publishedAt,
         sentiment,
         summary,
+        score,
         analyzedAt,
         createdAt
       )
@@ -257,6 +260,7 @@ export class DatabaseService {
         @publishedAt,
         @sentiment,
         @summary,
+        @score,
         @analyzedAt,
         @createdAt
       )
@@ -277,6 +281,7 @@ export class DatabaseService {
           publishedAt: mention.publishedAt,
           sentiment: mention.sentiment,
           summary: mention.summary,
+          score: mention.score,
           analyzedAt: mention.analyzedAt ?? now,
           createdAt: mention.createdAt ?? now,
         });
@@ -545,6 +550,7 @@ export class DatabaseService {
             publishedAt,
             sentiment,
             summary,
+            score,
             analyzedAt,
             createdAt
           FROM mentions
@@ -578,6 +584,7 @@ export class DatabaseService {
             publishedAt,
             sentiment,
             summary,
+            score,
             analyzedAt,
             createdAt
           FROM mentions
@@ -623,12 +630,18 @@ export class DatabaseService {
     const sortDirection = query.sortDirection ?? "desc";
     const direction = sortDirection === "asc" ? "ASC" : "DESC";
 
-    const params: string[] = [quarterStart];
+    const params: Array<string | number> = [quarterStart];
     let companyFilter = "";
+    let scoreFilter = "";
 
     if (query.companyId) {
       companyFilter = "AND companyId = ?";
       params.push(query.companyId);
+    }
+
+    if (query.minScore !== undefined) {
+      scoreFilter = "AND score >= ?";
+      params.push(query.minScore);
     }
 
     const rows = this.db
@@ -643,11 +656,13 @@ export class DatabaseService {
             publishedAt,
             sentiment,
             summary,
+            score,
             analyzedAt,
             createdAt
           FROM mentions
           WHERE publishedAt >= ?
             ${companyFilter}
+            ${scoreFilter}
           ORDER BY ${sortBy} ${direction}, createdAt DESC
         `,
       )
@@ -706,6 +721,7 @@ export class DatabaseService {
             publishedAt,
             sentiment,
             summary,
+            score,
             analyzedAt,
             createdAt
           FROM mentions
@@ -771,13 +787,23 @@ export class DatabaseService {
   public listCompaniesWithStats(
     query: ListCompaniesQuery = {},
   ): CompanyWithStats[] {
+    const minScore =
+      query.minScore !== undefined && query.minScore > RELEVANCE_SCORE_MIN
+        ? query.minScore
+        : undefined;
+
     const companies = this.listCompanies(query);
-    const quarterlyMentions = this.getQuarterlyMentions();
+    const quarterlyMentions = this.getQuarterlyMentions({ minScore });
     const sentimentByCompany = this.groupSentimentCountsByCompany(
       quarterlyMentions,
     );
 
-    return companies.map((company) =>
+    const scopedCompanies =
+      minScore === undefined
+        ? companies
+        : companies.filter((company) => sentimentByCompany.has(company.id));
+
+    return scopedCompanies.map((company) =>
       this.toCompanyWithStats(company, sentimentByCompany.get(company.id)),
     );
   }
@@ -913,6 +939,7 @@ export class DatabaseService {
             publishedAt,
             sentiment,
             summary,
+            score,
             analyzedAt,
             createdAt
           FROM mentions
@@ -947,6 +974,7 @@ export class DatabaseService {
       publishedAt: row.publishedAt,
       sentiment: row.sentiment,
       summary: row.summary,
+      score: row.score,
       analyzedAt: row.analyzedAt,
       createdAt: row.createdAt,
     };

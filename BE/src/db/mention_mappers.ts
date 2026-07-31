@@ -22,7 +22,7 @@ export function dbMentionToAnalyzedMention(
   return {
     mention: rawMention,
     companyName,
-    isRelevant: true,
+    score: mention.score,
     sentiment: mention.sentiment,
     summary: mention.summary,
   };
@@ -43,6 +43,7 @@ export function analyzedMentionToMentionInput(
     publishedAt,
     sentiment: analyzed.sentiment,
     summary: analyzed.summary,
+    score: analyzed.score,
     analyzedAt: new Date().toISOString(),
   };
 }

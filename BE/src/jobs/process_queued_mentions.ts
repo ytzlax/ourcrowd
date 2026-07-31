@@ -155,8 +155,9 @@ async function processQueuedMentionGroup(
       ? await options.analyzer.analyzeMentions(companyMetadata, uncachedMentions)
       : [];
 
+  // analyzeMentions already keeps only scores >= threshold; require a URL to persist.
   const saveableMentions = newlyAnalyzed.filter(
-    (entry) => entry.isRelevant && entry.mention.url.trim().length > 0,
+    (entry) => entry.mention.url.trim().length > 0,
   );
   const saved = options.db.saveMentions(
     saveableMentions.map((entry) =>

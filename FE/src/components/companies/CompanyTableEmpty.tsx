@@ -15,7 +15,7 @@ export function CompanyTableEmpty({ hasFilters }: CompanyTableEmptyProps) {
       </p>
       <p className="mt-1 text-sm text-muted-foreground">
         {hasFilters
-          ? "Try a different search term or status filter."
+          ? "Try a different search, status, or minimum score."
           : "Seed portfolio companies in the backend to populate this table."}
       </p>
     </div>
