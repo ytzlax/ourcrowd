@@ -1,9 +1,9 @@
-import type { Mention } from "../data_layer/base_data_provider.js";
-import type { RoutedFetchResult } from "../data_layer/routed_data_fetcher.js";
-import type { CompanyMetadata } from "../data_layer/router_types.js";
+import type { Mention } from "../data_ingestion_layer/base_data_provider.js";
+import type { RoutedFetchResult } from "../data_ingestion_layer/routed_data_fetcher.js";
+import type { CompanyMetadata } from "../data_ingestion_layer/router_types.js";
 import { DatabaseService } from "../db/database_service.js";
 import type { Company, QueuedMentionInput } from "../db/types.js";
-import { RoutedDataFetcher } from "../data_layer/routed_data_fetcher.js";
+import { RoutedDataFetcher } from "../data_ingestion_layer/routed_data_fetcher.js";
 import { fetchCompanyMentions } from "./fetch_company_mentions.js";
 
 export interface FetchAndQueueCompanyMentionsResult {

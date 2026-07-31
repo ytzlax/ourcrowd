@@ -1,8 +1,8 @@
 import path from "node:path";
 
 import { SentimentAnalyzer } from "../analysis/index.js";
-import type { Mention } from "../data_layer/base_data_provider.js";
-import type { CompanyMetadata } from "../data_layer/router_types.js";
+import type { Mention } from "../data_ingestion_layer/base_data_provider.js";
+import type { CompanyMetadata } from "../data_ingestion_layer/router_types.js";
 import { readExistingEnrichment } from "../data_processing/helper.js";
 import { resolveProjectDataDir } from "../db/connection.js";
 import { DatabaseService } from "../db/database_service.js";

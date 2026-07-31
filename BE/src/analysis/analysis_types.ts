@@ -1,4 +1,4 @@
-import type { RawMention } from "../data_layer/base_data_provider.js";
+import type { RawMention } from "../data_ingestion_layer/base_data_provider.js";
 import type { JsonSchema } from "../llm/types.js";
 import { SentimentType } from "./sentiment_type.js";
 

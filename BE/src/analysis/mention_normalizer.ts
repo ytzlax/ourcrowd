@@ -1,4 +1,4 @@
-import type { Mention } from "../data_layer/base_data_provider.js";
+import type { Mention } from "../data_ingestion_layer/base_data_provider.js";
 
 const MAX_SNIPPET_LENGTH = 2000;
 

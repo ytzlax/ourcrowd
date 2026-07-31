@@ -1,7 +1,7 @@
-import type { Mention, RawMention } from "../data_layer/base_data_provider.js";
+import type { Mention, RawMention } from "../data_ingestion_layer/base_data_provider.js";
 import { Llm } from "../llm/llm.js";
 import { LlmModel } from "../llm/llm_model.js";
-import type { CompanyMetadata } from "../data_layer/router_types.js";
+import type { CompanyMetadata } from "../data_ingestion_layer/router_types.js";
 import type { LlmConfig } from "../llm/types.js";
 import {
   RELEVANCE_SCORE_MAX,
@@ -76,7 +76,6 @@ export class SentimentAnalyzer {
 
     const articleLines = [
       `Title: ${normalized.title}`,
-      //publishedLine,
       "",
       "Content snippet:",
       normalized.combinedText,
@@ -84,29 +83,36 @@ export class SentimentAnalyzer {
 
     return `
     Analyze the following news mention for the portfolio company.
+    
     Company detail:
     - Name: ${company.name}
-    - Context : ${company.context}
+    - Context: ${company.context}
+    
     Article:
     ${articleLines.join("\n")}
 
-     Tasks:
-     1. Score how strongly the article is about this specific tech company/startup (${RELEVANCE_SCORE_MIN}-${RELEVANCE_SCORE_MAX}).
-     2. Classify sentiment as positive, negative, or neutral for the company's business outlook.
-     3. Provide a one-sentence summary of the mention's key takeaway (or 'N/A' if score is low).
-     Relevance score guidelines (score ${RELEVANCE_SCORE_MIN}-${RELEVANCE_SCORE_MAX}):
-     - 1-3: Unrelated — ${company.name} is not mentioned at all in the provided snippet, name used as a general noun/phrase/technical term, a different company/person with the same name, or only in a footer/tag cloud/disclaimer.
-     - 4-6: Ambiguous or weak — company name appears but reporting on the company is unclear or incidental.
-     - 7-10: Clearly about this company — article directly discusses, news-reports on, or features this company or its products/executives.
-     Sentiment guidelines:
-     - positive: funding, acquisitions, strategic partnerships, product launches, revenue growth, industry awards
-     - negative: layoffs, lawsuits, security breaches, regulatory sanctions, product failures, financial loss
-     - neutral: routine corporate announcements, balanced reporting, or general industry roundups
+    Tasks:
+    1. Score how strongly the article is about this specific tech company (${RELEVANCE_SCORE_MIN}-${RELEVANCE_SCORE_MAX}).
+    2. Classify sentiment as positive, negative, or neutral for the company's business outlook.
+    3. Provide a one-sentence summary of the mention's key takeaway (or 'N/A' if score < 7).
 
-    Return JSON with:
-    - score: integer ${RELEVANCE_SCORE_MIN}-${RELEVANCE_SCORE_MAX}
-    - sentiment: 'positive' | 'negative' | 'neutral'
-    - summary: brief takeaway
+    Guidelines:
+    - Relevance (1-3: Unrelated / Same name used differently, 4-6: Incidental mention, 7-10: Directly about this company)
+    - Sentiment (positive: funding/awards/growth, negative: layoffs/lawsuits/losses, neutral: routine updates)
+
+    Examples:
+
+    Example 1 (Low Relevance):
+    Company: Apple
+    Article: "How to make a delicious apple pie recipe at home."
+    Output: {"score": 1, "sentiment": "neutral", "summary": "N/A"}
+
+    Example 2 (High Relevance):
+    Company: ${company.name}
+    Article: "Title: ${company.name} raises $10M in Series A funding\nSnippet: Tech startup ${company.name} announced today it closed a new round of funding..."
+    Output: {"score": 10, "sentiment": "positive", "summary": "${company.name} successfully raised $10M in Series A funding."}
+
+    Return ONLY a valid JSON object with keys: "score", "sentiment", "summary". No extra explanation.
     `;
   }
 

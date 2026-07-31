@@ -6,4 +6,4 @@ export enum LlmModel {
   QWEN_2_5_1_5B = "qwen2.5:1.5b",
 }
 
-export const DEFAULT_LLM_MODEL = LlmModel.QWEN_2_5_0_5B;
+export const DEFAULT_LLM_MODEL = LlmModel.LLAMA_3_2;

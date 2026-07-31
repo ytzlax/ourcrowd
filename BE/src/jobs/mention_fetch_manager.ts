@@ -2,8 +2,8 @@ import cron, { type ScheduledTask } from "node-cron";
 
 import { DatabaseService } from "../db/database_service.js";
 import { QueuedMentionStatus, type Company } from "../db/types.js";
-import { RoutedDataFetcher } from "../data_layer/routed_data_fetcher.js";
-import type { CompanyMetadata } from "../data_layer/router_types.js";
+import { RoutedDataFetcher } from "../data_ingestion_layer/routed_data_fetcher.js";
+import type { CompanyMetadata } from "../data_ingestion_layer/router_types.js";
 import { fetchAndQueueCompanyMentions } from "./fetch_and_queue_company_mentions.js";
 
 const DEFAULT_FETCH_CRON_SCHEDULE = "*/10 * * * *";

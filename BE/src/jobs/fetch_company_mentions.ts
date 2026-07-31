@@ -2,8 +2,8 @@ import {
   RoutedDataFetcher,
   type FetchForCompanyOptions,
   type RoutedFetchResult,
-} from "../data_layer/routed_data_fetcher.js";
-import type { CompanyMetadata } from "../data_layer/router_types.js";
+} from "../data_ingestion_layer/routed_data_fetcher.js";
+import type { CompanyMetadata } from "../data_ingestion_layer/router_types.js";
 
 export async function fetchCompanyMentions(
   company: CompanyMetadata,

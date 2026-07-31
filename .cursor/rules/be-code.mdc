@@ -35,7 +35,7 @@ root/
 ├── FE/                        # Client application dashboard
 └── BE/                        # Server application & services
     ├── src/
-    │   ├── data_layer/        # Data collection & Providers
+    │   ├── data_ingestion_layer/        # Data collection & Providers
     │   ├── analysis/          # Analysis & Ollama LLM Classification
     │   ├── llm/               # LLM Infrastructure & Router
     │   ├── jobs/              # Scheduled Cron Jobs (Daily Alerts)
@@ -46,7 +46,7 @@ root/
     └── tsconfig.json
 ```
 3. Data Acquisition Layer Architecture
-The BE/src/data_layer/ directory must follow an Object-Oriented polymorphism pattern:
+The BE/src/data_ingestion_layer/ directory must follow an Object-Oriented polymorphism pattern:
 
 Base Class:
 
@@ -71,7 +71,7 @@ Use an Enum to reference available providers.
 Instantiate data providers via a unified Factory pattern or Data Aggregator service to decouple providers from the business logic.
 
 4. Layer Responsibilities Summary
-BE/src/data_layer/: Sourcing external news, handling HTTP fetching, provider fallbacks, and raw response parsing.
+BE/src/data_ingestion_layer/: Sourcing external news, handling HTTP fetching, provider fallbacks, and raw response parsing.
 
 BE/src/analysis/: Normalizing raw news content and defining prompts for LLM sentiment analysis.
 

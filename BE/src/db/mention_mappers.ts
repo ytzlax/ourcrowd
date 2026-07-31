@@ -3,7 +3,7 @@ import {
   DataProviderType,
   type Mention,
   type RawMention,
-} from "../data_layer/base_data_provider.js";
+} from "../data_ingestion_layer/base_data_provider.js";
 import type { Mention as DbMention, MentionInput, QueuedMention } from "./types.js";
 
 export function dbMentionToAnalyzedMention(
