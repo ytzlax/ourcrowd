@@ -1,4 +1,4 @@
-import { useDeferredValue, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 
 import { useCompanies } from "@/hooks/useDashboardQueries";
 import { cn } from "@/lib/utils";
@@ -14,14 +14,22 @@ import { CompanyTableToolbar } from "./CompanyTableToolbar";
 import { MentionStatusBadge } from "./MentionStatusBadge";
 import { SentimentMiniBar } from "./SentimentMiniBar";
 
+const SCORE_MIN = 1;
+
 interface CompanyTableProps {
   selectedCompanyId: string | null;
+  minScore: number;
   onSelectCompany: (company: CompanyWithStats) => void;
+  onMinScoreChange: (value: number) => void;
+  onClearSelection?: () => void;
 }
 
 export function CompanyTable({
   selectedCompanyId,
+  minScore,
   onSelectCompany,
+  onMinScoreChange,
+  onClearSelection,
 }: CompanyTableProps) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<CompanyStatusFilter>("all");
@@ -30,6 +38,7 @@ export function CompanyTable({
   const queryParams = {
     search: deferredSearch || undefined,
     status,
+    minScore: minScore > SCORE_MIN ? minScore : undefined,
   };
 
   const { data, isPending, isError, error, refetch, isFetching } =
@@ -37,15 +46,30 @@ export function CompanyTable({
 
   const companies = data?.companies ?? [];
   const hasFilters =
-    deferredSearch.length > 0 || status !== "all";
+    deferredSearch.length > 0 || status !== "all" || minScore > SCORE_MIN;
+
+  useEffect(() => {
+    if (!selectedCompanyId || !onClearSelection || isPending) {
+      return;
+    }
+
+    const stillVisible = companies.some(
+      (company) => company.id === selectedCompanyId,
+    );
+    if (!stillVisible) {
+      onClearSelection();
+    }
+  }, [companies, selectedCompanyId, onClearSelection, isPending]);
 
   return (
     <div className="space-y-4">
       <CompanyTableToolbar
         search={search}
         status={status}
+        minScore={minScore}
         onSearchChange={setSearch}
         onStatusChange={setStatus}
+        onMinScoreChange={onMinScoreChange}
         resultCount={companies.length}
       />
 

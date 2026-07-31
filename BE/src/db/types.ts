@@ -130,6 +130,8 @@ export type SortDirection = "asc" | "desc";
 
 export interface QuarterlyMentionsQuery {
   companyId?: string;
+  /** When set, only mentions with score >= this value. */
+  minScore?: number;
   sortBy?: QuarterlyMentionSortField;
   sortDirection?: SortDirection;
 }
@@ -176,4 +178,6 @@ export type CompanyStatusFilter = MentionStatus | "all";
 export interface ListCompaniesQuery {
   search?: string;
   status?: CompanyStatusFilter;
+  /** When > 1, only companies with at least one quarterly mention at/above this score. */
+  minScore?: number;
 }

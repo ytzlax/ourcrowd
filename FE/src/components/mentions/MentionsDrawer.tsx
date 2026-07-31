@@ -8,12 +8,19 @@ import { MentionCard } from "./MentionCard";
 import { MentionsDrawerSkeleton } from "./MentionsDrawerSkeleton";
 import { MentionsEmpty } from "./MentionsEmpty";
 
+const SCORE_MIN = 1;
+
 interface MentionsDrawerProps {
   company: CompanyWithStats | null;
+  minScore: number;
   onClose: () => void;
 }
 
-export function MentionsDrawer({ company, onClose }: MentionsDrawerProps) {
+export function MentionsDrawer({
+  company,
+  minScore,
+  onClose,
+}: MentionsDrawerProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const open = company !== null;
 
@@ -70,6 +77,9 @@ export function MentionsDrawer({ company, onClose }: MentionsDrawerProps) {
   }, []);
 
   const mentions = data?.mentions ?? [];
+  const filteredMentions = mentions.filter(
+    (mention) => mention.score >= minScore,
+  );
   const titleId = "mentions-drawer-title";
 
   return (
@@ -95,6 +105,11 @@ export function MentionsDrawer({ company, onClose }: MentionsDrawerProps) {
                   {company.name}
                 </h2>
                 <MentionStatusBadge company={company} />
+                {minScore > SCORE_MIN ? (
+                  <p className="text-xs text-muted-foreground">
+                    Showing score {minScore}+
+                  </p>
+                ) : null}
               </div>
               <button
                 type="button"
@@ -137,14 +152,23 @@ export function MentionsDrawer({ company, onClose }: MentionsDrawerProps) {
               <MentionsEmpty />
             ) : null}
 
-            {!isPending && !isError && mentions.length > 0 ? (
+            {!isPending &&
+            !isError &&
+            mentions.length > 0 &&
+            filteredMentions.length === 0 ? (
+              <MentionsEmpty filtered minScore={minScore} />
+            ) : null}
+
+            {!isPending && !isError && filteredMentions.length > 0 ? (
               <div>
                 <p className="pt-4 text-xs text-muted-foreground">
-                  {mentions.length}{" "}
-                  {mentions.length === 1 ? "mention" : "mentions"} in the last
-                  90 days
+                  {filteredMentions.length}{" "}
+                  {filteredMentions.length === 1 ? "mention" : "mentions"}
+                  {minScore > SCORE_MIN
+                    ? ` with score ${minScore}+`
+                    : " in the last 90 days"}
                 </p>
-                {mentions.map((mention) => (
+                {filteredMentions.map((mention) => (
                   <MentionCard key={mention.id} mention={mention} />
                 ))}
               </div>
