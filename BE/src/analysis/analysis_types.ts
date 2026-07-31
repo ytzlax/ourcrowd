@@ -8,6 +8,7 @@ export const RELEVANCE_SCORE_MAX = 10;
 
 export interface AnalyzedMention {
   mention: RawMention;
+  publishedAt: Date | null;
   companyName: string;
   score: number;
   sentiment: SentimentType;

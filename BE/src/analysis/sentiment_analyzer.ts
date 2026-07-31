@@ -47,9 +47,9 @@ export class SentimentAnalyzer {
     mention: Mention,
   ): Promise<AnalyzedMention> {
     const normalized = normalizeMentionForAnalysis(mention);
-    this.llm.prompt = this.buildAnalysisPrompt(company, mention, normalized);
+    this.llm.prompt = this.buildAnalysisPrompt(company, normalized);
     const raw = await this.llm.invokeStructured<RawSentimentDecision>(SENTIMENT_DECISION_SCHEMA);
-    console.log(`[SentimentAnalyzer result: ${mention.title.slice(0, 50)} - ${raw.score} `);
+    console.log(`[SentimentAnalyzer result: ${mention.title.slice(0, 50)} - ${raw.score}`);
     return this.normalizeResult(company.name, mention, raw);
   }
 
@@ -71,12 +71,8 @@ export class SentimentAnalyzer {
 
   private buildAnalysisPrompt(
     company: CompanyMetadata,
-    mention: Mention,
     normalized: ReturnType<typeof normalizeMentionForAnalysis>,
   ): string {
-    // const publishedLine = mention.publishedAt
-    //   ? `Published: ${mention.publishedAt.toISOString()}`
-    //   : null;
 
     const articleLines = [
       `Title: ${normalized.title}`,
@@ -125,6 +121,7 @@ export class SentimentAnalyzer {
       score: this.parseScore(raw.score),
       sentiment: this.parseSentiment(raw.sentiment),
       summary: raw.summary.trim(),
+      publishedAt: mention.publishedAt,
     };
   }
 
