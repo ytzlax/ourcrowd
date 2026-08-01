@@ -12,10 +12,10 @@ FE_DIR="$ROOT_DIR/FE"
 DEV_RUN="$ROOT_DIR/scripts/dev-run.sh"
 
 echo "==> Installing BE dependencies"
-npm install --prefix "$BE_DIR"
+(cd "$BE_DIR" && npm install)
 
 echo "==> Installing FE dependencies"
-npm install --prefix "$FE_DIR"
+(cd "$FE_DIR" && npm install)
 
 if [[ ! -f "$BE_DIR/.env" ]]; then
   cp "$BE_DIR/.env.example" "$BE_DIR/.env"
@@ -25,10 +25,10 @@ else
 fi
 
 echo "==> Enriching companies (Tavily)"
-npm run enrich-companies --prefix "$BE_DIR"
+(cd "$BE_DIR" && npm run enrich-companies)
 
 echo "==> Loading companies into SQLite (classifyCompanies via LLM)"
-npm run load-companies --prefix "$BE_DIR"
+(cd "$BE_DIR" && npm run load-companies)
 
 echo "==> Starting stack via dev-run.sh"
 exec "$DEV_RUN"

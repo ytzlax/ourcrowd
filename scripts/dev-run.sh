@@ -26,10 +26,10 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 echo "==> Installing BE dependencies"
-npm install --prefix "$BE_DIR"
+(cd "$BE_DIR" && npm install)
 
 echo "==> Installing FE dependencies"
-npm install --prefix "$FE_DIR"
+(cd "$FE_DIR" && npm install)
 
 if [[ ! -f "$BE_DIR/.env" ]]; then
   cp "$BE_DIR/.env.example" "$BE_DIR/.env"
