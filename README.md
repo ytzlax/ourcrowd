@@ -393,3 +393,9 @@ Alongside these layers, a daily alert job (`npm run alert-cron`, or `npm run ale
 - **Data Stores**: SQLite / Local JSON files
 - **News Sourcing**: Google News RSS, Tavily API, NewsAPI
 
+### Assumptions
+
+The exercise requires a **daily** update across the portfolio. A full pass over all companies in a single run is slow (provider calls, fallbacks, and local LLM analysis).
+
+It is assumed acceptable to run the mention-fetch job on a short recurring interval (~every 5 minutes), advancing through the company list via `mention_fetch_analysis`, so that **within ~24 hours the pipeline covers all companies** — satisfying the daily-update requirement without blocking on one long batch.
+
