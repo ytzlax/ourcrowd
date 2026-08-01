@@ -96,53 +96,6 @@ All backend commands run from `BE/`. The dashboard runs from `FE/`.
 
 Then open [http://localhost:5173](http://localhost:5173). Press `Ctrl+C` in the terminal to stop everything.
 
-Manual steps below if you prefer to run processes separately.
-
-
-
-#### 1. One-time data setup (BE)
-
-Loads the company seed list into SQLite, then enriches each company via Tavily (requires `TAVILY_API_KEY`).
-
-The company seed list lives at `BE/ourcrowd_companies.txt`.
-
-```bash
-cd BE
-npm run load-companies
-npm run enrich-companies
-```
-
-
-
-#### 2. Start background jobs (BE)
-
-Run each job in its own terminal from `BE/`:
-
-```bash
-# Long-running schedules
-npm run fetch-cron       # poll news providers (~every 10 min)
-npm run analysis-cron    # classify queued mentions via Ollama (~every 5 min)
-npm run alert-cron       # daily console alert (default 09:00 Asia/Jerusalem)
-
-# One-shot (for testing / evaluation)
-npm run fetch-cron:now
-npm run analysis-cron:now
-npm run alert-cron:now
-```
-
-
-
-#### 3. Start API + Dashboard
-
-```bash
-# Terminal A — API gateway (http://localhost:3000)
-cd BE && npm run dev
-
-# Terminal B — Vite dashboard (http://localhost:5173)
-cd FE && npm run dev
-```
-
-Open [http://localhost:5173](http://localhost:5173) in your browser. The FE dev server proxies `/api` to the backend on port 3000.
 
 ---
 
@@ -398,4 +351,12 @@ Alongside these layers, a daily alert job (`npm run alert-cron`, or `npm run ale
 The exercise requires a **daily** update across the portfolio. A full pass over all companies in a single run is slow (provider calls, fallbacks, and local LLM analysis).
 
 It is assumed acceptable to run the mention-fetch job on a short recurring interval (~every 5 minutes), advancing through the company list via `mention_fetch_analysis`, so that **within ~24 hours the pipeline covers all companies** — satisfying the daily-update requirement without blocking on one long batch.
+
+---
+
+## What's next
+
+- [ ] Unit tests
+- [ ] Change the score to relevant / not relevant / not sure
+
 
