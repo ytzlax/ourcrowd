@@ -102,7 +102,9 @@ Manual steps below if you prefer to run processes separately.
 
 #### 1. One-time data setup (BE)
 
-Loads the company seed list into SQLite, then enriches each company via Tavily (requires `TAVILY_API_KEY`):
+Loads the company seed list into SQLite, then enriches each company via Tavily (requires `TAVILY_API_KEY`).
+
+The company seed list lives at `BE/ourcrowd_companies.txt`.
 
 ```bash
 cd BE
