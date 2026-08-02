@@ -358,5 +358,6 @@ It is assumed acceptable to run the mention-fetch job on a short recurring inter
 
 - [ ] Unit tests
 - [ ] Change the score to relevant / not relevant / not sure
+- [ ] Cross-check sentiment with a second LLM
 
 
